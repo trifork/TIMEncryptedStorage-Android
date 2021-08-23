@@ -1,4 +1,5 @@
 package com.trifork.timencryptedstorage.models
 
-class TIMKeyServiceVersion {
+enum class TIMKeyServiceVersion {
+    v1
 }
