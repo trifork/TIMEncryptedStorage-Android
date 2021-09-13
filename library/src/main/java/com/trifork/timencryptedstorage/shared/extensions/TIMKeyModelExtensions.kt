@@ -6,3 +6,7 @@ import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 fun TIMKeyModel.encrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): ByteArray {
     TODO()
 }
+
+fun TIMKeyModel.decrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): ByteArray {
+    TODO()
+}

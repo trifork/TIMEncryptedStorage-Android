@@ -5,8 +5,10 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
+import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
+import com.trifork.timencryptedstorage.shared.extensions.decrypt
 import com.trifork.timencryptedstorage.shared.extensions.encrypt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -87,14 +89,14 @@ class TIMEncryptedStorage(
     }
 
 
-    //region Handle results, encryption and storing
+    //region Handle results, encryption/decryption and storing
     private fun handleKeyServiceResultAndEncryptData(
         storageKey: StorageKey,
         data: ByteArray,
         keyServiceResult: TIMResult<TIMKeyModel, TIMKeyServiceError>
     ): TIMResult<Unit, TIMEncryptedStorageError> {
         return when (keyServiceResult) {
-            is TIMResult.Failure -> TODO()
+            is TIMResult.Failure -> TODO("Errors not handled")
             is TIMResult.Success -> encryptAndStore(storageKey, data, keyServiceResult.value)
         }
     }
@@ -106,11 +108,30 @@ class TIMEncryptedStorage(
     ): TIMResult<Unit, TIMEncryptedStorageError> {
         val encryptedData = keyModel.encrypt(data, encryptionMethod)
         // TODO: Can we ever fail to write to EncryptedSharedPrefs? - MFJ (13/09/2021)
-        secureStorage.store(encryptedData, storageKey)
-
-        // TODO: Consider error cases here - MFJ (13/09/2021)
-        return TIMResult.Success(Unit)
+        return TIMResult.Success(secureStorage.store(encryptedData, storageKey))
     }
+
+    private fun handleKeyServiceResultAndDecryptData(
+        storageKey: StorageKey,
+        keyServiceResult: TIMResult<TIMKeyModel, TIMKeyServiceError>
+    ): TIMResult<ByteArray, TIMEncryptedStorageError> {
+        return when(keyServiceResult) {
+            is TIMResult.Failure -> TODO("Errors not handled")
+            is TIMResult.Success -> loadAndDecrypt(storageKey, keyServiceResult.value)
+        }
+    }
+
+    private fun loadAndDecrypt(storageKey: StorageKey, keyModel: TIMKeyModel): TIMResult<ByteArray, TIMEncryptedStorageError> {
+        val encryptedDataResult = secureStorage.get(storageKey)
+
+        return when(encryptedDataResult) {
+            is TIMResult.Failure -> TODO()
+            // TODO: Consider error cases here - MFJ (13/09/2021)
+            is TIMResult.Success ->
+                TIMResult.Success(keyModel.decrypt(encryptedDataResult.value, encryptionMethod))
+        }
+    }
+    //endregion
 
     /**
      * Stores and encrypts [data] for a [keyId] and [longSecret] combination
@@ -121,16 +142,19 @@ class TIMEncryptedStorage(
      * @return [TIMResult] with an empty success result or an error
      */
     fun storeWithLongSecret(
+        scope: CoroutineScope,
         storageKey: StorageKey,
         data: ByteArray,
         keyId: String,
         longSecret: String
-    ): TIMResult<Unit, TIMEncryptedStorageError> {
+    ): Deferred<TIMResult<Unit, TIMEncryptedStorageError>> = scope.async {
         // 1. Get encryption key with keyId + longSecret
         // 2. Encrypt data with encryption key from response
         // 3. Store encrypted data in secure storage with id
         // 4. Return bool result for success
-        TODO()
+        val keyServiceResult =
+            keyService.getKeyViaLongSecret(scope, longSecret, keyId).await()
+        return@async handleKeyServiceResultAndEncryptData(storageKey, data, keyServiceResult)
     }
 
 
@@ -141,15 +165,27 @@ class TIMEncryptedStorage(
      * @param secret The secret for the new key
      */
     fun storeWithNewKey(
+        scope: CoroutineScope,
         storageKey: StorageKey,
         data: ByteArray,
         secret: String
-    ): Nothing {
+    ): Deferred<TIMResult.Success<TIMESKeyCreationResult>> = scope.async {
         // 1. Create new encryption key with secret
         // 2. Encrypt data with encryption key from response
         // 3. Store encrypted data in secure storage with id
         // 4. Return bool result for success + keyId
-        TODO()
+        val keyServiceResult = keyService.createKey(scope, secret).await()
+        when (keyServiceResult) {
+            is TIMResult.Failure -> TODO()
+            is TIMResult.Success -> {
+                val keyModel = keyServiceResult.value
+                // TODO: Ask Peter if any instances are still running where longSecret is nullable - MFJ (13/09/2021)
+                val encryptedData = keyModel.encrypt(data, encryptionMethod)
+
+                // TODO: Consider error cases here - MFJ (13/09/2021)
+                TIMResult.Success(TIMESKeyCreationResult(keyModel.keyId, keyModel.longSecret))
+            }
+        }
     }
 
     fun storeViaBiometric(
@@ -179,20 +215,27 @@ class TIMEncryptedStorage(
      * Gets and decrypts data for a [keyId] and [secret] combination
      */
     fun get(
+        scope: CoroutineScope,
         storageKey: StorageKey,
         keyId: String,
         secret: String
-    ): TIMResult<ByteArray, TIMEncryptedStorageError> {
+    ): Deferred<TIMResult<ByteArray, TIMEncryptedStorageError>> = scope.async {
         // 1. Get encryption key with keyId + secret
         // 2. Load encrypted data from secure storage with id
         // 3. Decrypt data with encryption key
         // 4. Return decrypted data
-        TODO()
+        val keyServiceResult = keyService.getKeyViaSecret(
+            scope,
+            secret,
+            keyId
+        ).await()
+
+        return@async handleKeyServiceResultAndDecryptData(storageKey, keyServiceResult)
     }
 
     fun getViaBiomtric(): Nothing = TODO()
 
-    fun enableBiometric(): Nothing = TODO()
+    fun enableBiometric(): TIMResult<Unit, TIMEncryptedStorageError> = TODO()
     //endregion
 
 }
