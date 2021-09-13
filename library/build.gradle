@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+    id 'maven-publish'
+}
+
+apply from: '../dependencies.gradle'
+
+
+android {
+    compileSdk 30
+
+    defaultConfig {
+        minSdk 16
+        targetSdk 30
+        versionCode 1
+        versionName "0.0.1"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+
+    //region Android
+    implementation androidX.coreKtx
+    implementation androidX.appCompat
+
+    implementation androidX.securityCrypto
+    //endregion
+
+    //region Kotlin
+    implementation kotlin.coroutinesAndroid
+    implementation kotlin.serialization.json
+    //endregion
+
+    //region Retrofit
+    implementation retrofit.retrofit2
+    implementation retrofit.serializationConverter
+    //endregion
+
+    //region okhttp
+    implementation okHttp.okHttp
+    testImplementation okHttp.mockWebServer
+    //endregion
+
+    //region Testing
+    testImplementation jUnit.jupiterApi
+    testRuntimeOnly jUnit.jupiterEngine
+
+    androidTestImplementation androidX.test.androidJUnit
+    androidTestImplementation androidX.test.espresso
+    //endregion
+}
+
+apply from: '../publish.gradle'
