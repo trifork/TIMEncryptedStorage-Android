@@ -1,4 +1,5 @@
 package com.trifork.timencryptedstorage.models
 
-enum class TIMESEncryptionMethod {
+sealed class TIMESEncryptionMethod {
+    object AesGcm: TIMESEncryptionMethod()
 }
