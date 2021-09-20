@@ -11,6 +11,6 @@ internal object JsonConverter {
         ignoreUnknownKeys = true
     }
 
-    @ExperimentalSerializationApi
+    @OptIn(ExperimentalSerializationApi::class)
     val factory = builder.asConverterFactory("application/json".toMediaType())
 }

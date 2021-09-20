@@ -1,12 +1,15 @@
 package com.trifork.timencryptedstorage
 
+import android.content.Context
 import com.trifork.timencryptedstorage.keyservice.TIMKeyService
+import com.trifork.timencryptedstorage.keyservice.TIMKeyServiceImpl
 import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
+import com.trifork.timencryptedstorage.securestorage.TIMEncryptedSharedPreferences
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
 import com.trifork.timencryptedstorage.shared.extensions.encrypt

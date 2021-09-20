@@ -6,9 +6,13 @@ import com.trifork.timencryptedstorage.models.errors.mapToTIMKeyServiceError
 sealed class TIMResult<out Value, out Failure> {
     class Success<out Value>(val value: Value) : TIMResult<Value, Nothing>()
     class Failure<out Failure>(val error: Failure) : TIMResult<Nothing, Failure>()
+
+    companion object
 }
 
-fun <Value, Error> Value.toTIMSucces(): TIMResult<Value, Error> = TIMResult.Success(this)
+fun <T> T.toTIMSucces(): TIMResult.Success<T> = TIMResult.Success(this)
+
+fun <Error: Throwable> Error.toTIMFailure() = TIMResult.Failure(this)
 
 inline fun <Value> toTIMKeyServiceResult(block: () -> Value): TIMResult<Value, TIMKeyServiceError> =
     try {
