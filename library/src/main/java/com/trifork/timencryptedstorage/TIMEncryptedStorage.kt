@@ -27,7 +27,7 @@ typealias StorageKey = String
  * This class depends on the Trifork Identity Manager Key Service ([TIMKeyService]), which handles encryption keys.
  */
 class TIMEncryptedStorage(
-    private val secureStorage: TIMSecureStorage,
+    val secureStorage: TIMSecureStorage,
     private val keyService: TIMKeyService,
     private val encryptionMethod: TIMESEncryptionMethod
 ) {
