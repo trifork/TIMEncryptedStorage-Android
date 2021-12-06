@@ -10,6 +10,8 @@ import com.trifork.timencryptedstorage.models.toTIMKeyServiceResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.await
 
@@ -41,8 +43,8 @@ class TIMKeyServiceImpl private constructor(
             api.getKeyViaSecret(
                 version.pathValue,
                 TIMKeyRequestBody.GetKey.ViaSecret(
-                    secret,
-                    keyId
+                    keyId,
+                    secret
                 )
             ).await()
         }
@@ -70,10 +72,17 @@ class TIMKeyServiceImpl private constructor(
         fun getInstance(
             config: TIMKeyServiceConfiguration
         ): TIMKeyServiceImpl {
+
+            //TODO
+            val httpLoggingInterceptor = HttpLoggingInterceptor()
+            httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+            val okHttpClient = OkHttpClient.Builder().addInterceptor(httpLoggingInterceptor).build()
+
             return instance ?: TIMKeyServiceImpl(
                 api = Retrofit.Builder()
                     .baseUrl(config.realmBaseUrl)
                     .addConverterFactory(JsonConverter.factory)
+                    .client(okHttpClient)
                     .build()
                     .create(TIMKeyServiceAPI::class.java),
                 version = config.version

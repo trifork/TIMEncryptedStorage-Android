@@ -1,21 +1,24 @@
 package com.trifork.timencryptedstorage.models.keyservice.request
 
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 sealed class TIMKeyRequestBody {
 
+    @Serializable
     class CreateKey(
-        val secret: String
+        @SerialName("secret") val secret: String
     ) : TIMKeyRequestBody()
 
     sealed class GetKey {
+        @Serializable
         class ViaSecret(
-            @SerialName("keyId") val keyId: String,
-            val secret: String
+            @SerialName("keyid") val keyId: String,
+            @SerialName("secret") val secret: String
         )
-
+        @Serializable
         class ViaLongSecret(
-            @SerialName("keyId") val keyId: String,
+            @SerialName("keyid") val keyId: String,
             @SerialName("longsecret") val longSecret: String
         )
     }

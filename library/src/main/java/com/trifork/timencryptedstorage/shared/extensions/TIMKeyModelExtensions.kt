@@ -1,6 +1,7 @@
 package com.trifork.timencryptedstorage.shared.extensions
 
 import android.util.Base64
+import androidx.annotation.VisibleForTesting
 import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
@@ -54,7 +55,8 @@ internal fun TIMKeyModel.getAesKey(): TIMResult<Key, TIMEncryptedStorageError> {
     }
 }
 
-private object GCMCipherHelper {
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+object GCMCipherHelper {
     private const val ivLengthInBytes = 12
     private const val tagLengthInBits = 128
     private const val cipherAlgorithm = "$aesAlgorithmName/GCM/NoPadding"

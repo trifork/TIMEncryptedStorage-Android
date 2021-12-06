@@ -7,7 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 
 /**
- * The key service responsible for creating and getting ecnryption keys based on a pin code or long secret (from biometric identification)_
+ * The key service responsible for creating and getting encryption keys based on a pin code or long secret (from biometric identification)_
  */
 interface TIMKeyService {
 

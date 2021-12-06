@@ -1,15 +1,12 @@
 package com.trifork.timencryptedstorage
 
-import android.content.Context
 import com.trifork.timencryptedstorage.keyservice.TIMKeyService
-import com.trifork.timencryptedstorage.keyservice.TIMKeyServiceImpl
 import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
-import com.trifork.timencryptedstorage.securestorage.TIMEncryptedSharedPreferences
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
 import com.trifork.timencryptedstorage.shared.extensions.encrypt
@@ -118,7 +115,7 @@ class TIMEncryptedStorage(
         storageKey: StorageKey,
         keyServiceResult: TIMResult<TIMKeyModel, TIMKeyServiceError>
     ): TIMResult<ByteArray, TIMEncryptedStorageError> {
-        return when(keyServiceResult) {
+        return when (keyServiceResult) {
             is TIMResult.Failure -> TODO("Errors not handled")
             is TIMResult.Success -> loadAndDecrypt(storageKey, keyServiceResult.value)
         }
@@ -127,7 +124,7 @@ class TIMEncryptedStorage(
     private fun loadAndDecrypt(storageKey: StorageKey, keyModel: TIMKeyModel): TIMResult<ByteArray, TIMEncryptedStorageError> {
         val encryptedDataResult = secureStorage.get(storageKey)
 
-        return when(encryptedDataResult) {
+        return when (encryptedDataResult) {
             is TIMResult.Failure -> TODO()
             // TODO: Consider error cases here - MFJ (13/09/2021)
             is TIMResult.Success ->
@@ -183,8 +180,7 @@ class TIMEncryptedStorage(
             is TIMResult.Success -> {
                 val keyModel = keyServiceResult.value
                 // TODO: Ask Peter if any instances are still running where longSecret is nullable - MFJ (13/09/2021)
-                val encryptedData = keyModel.encrypt(data, encryptionMethod)
-
+                encryptAndStore(storageKey, data, keyServiceResult.value)
                 // TODO: Consider error cases here - MFJ (13/09/2021)
                 TIMResult.Success(TIMESKeyCreationResult(keyModel.keyId, keyModel.longSecret))
             }

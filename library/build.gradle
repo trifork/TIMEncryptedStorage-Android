@@ -2,6 +2,7 @@ plugins {
     id 'com.android.library'
     id 'kotlin-android'
     id 'maven-publish'
+    id 'org.jetbrains.kotlin.plugin.serialization'
 }
 
 apply from: '../dependencies.gradle'
@@ -11,7 +12,7 @@ android {
     compileSdk 30
 
     defaultConfig {
-        minSdk 19
+        minSdk 21
         targetSdk 30
         versionCode 1
         versionName "0.0.1"
@@ -55,6 +56,7 @@ dependencies {
 
     //region okhttp
     implementation okHttp.okHttp
+    implementation okHttp.okHttpLogger
     testImplementation okHttp.mockWebServer
     //endregion
 

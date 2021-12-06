@@ -9,9 +9,9 @@ import kotlinx.serialization.Serializable
  * @property key Encryption key for keyId
  * @property longSecret longSecret used as secret when logging in with biometric protection
  */
-// TODO: Potentially missing serialization - MFJ (10/09/2021)
+@Serializable
 data class TIMKeyModel(
     @SerialName("keyid") val keyId: String,
-    val key: String,
+    @SerialName("key") val key: String,
     @SerialName("longsecret") val longSecret: String
 )
