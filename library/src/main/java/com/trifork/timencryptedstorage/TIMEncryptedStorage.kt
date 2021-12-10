@@ -5,12 +5,12 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
+import com.trifork.timencryptedstorage.models.errors.mapToTIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.models.toTIMFailure
 import com.trifork.timencryptedstorage.models.toTIMSuccess
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
-import com.trifork.timencryptedstorage.shared.extensions.GCMCipherHelperError
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
 import com.trifork.timencryptedstorage.shared.extensions.encrypt
 import kotlinx.coroutines.CoroutineScope
@@ -110,8 +110,14 @@ class TIMEncryptedStorage(
         keyModel: TIMKeyModel
     ): TIMResult<Unit, TIMEncryptedStorageError> {
         val encryptedData = keyModel.encrypt(data, encryptionMethod)
-        // TODO: Can we ever fail to write to EncryptedSharedPrefs? - MFJ (13/09/2021)
-        return secureStorage.store(encryptedData, storageKey).toTIMSuccess()
+
+        return when (encryptedData) {
+            is TIMResult.Failure -> encryptedData
+            is TIMResult.Success -> {
+                // TODO: Can we ever fail to write to EncryptedSharedPrefs? - MFJ (13/09/2021)
+                secureStorage.store(encryptedData.value, storageKey).toTIMSuccess()
+            }
+        }
     }
 
     private fun handleKeyServiceResultAndDecryptData(
@@ -119,18 +125,22 @@ class TIMEncryptedStorage(
         keyServiceResult: TIMResult<TIMKeyModel, TIMKeyServiceError>
     ): TIMResult<ByteArray, TIMEncryptedStorageError> {
         return when (keyServiceResult) {
-            is TIMResult.Failure -> TODO("Errors not handled")
+            is TIMResult.Failure -> TIMEncryptedStorageError.KeyServiceFailed(keyServiceResult.error).toTIMFailure()
             is TIMResult.Success -> loadAndDecrypt(storageKey, keyServiceResult.value)
         }
     }
 
+    /**
+     * Gets [StorageKey] from SecureStorage and decrypts using [keyModel] [decrypt] helper method
+     * @param storageKey The key for the data, used when the data was saved
+     * @param keyModel The [TIMKeyModel] received from the key server
+     */
     private fun loadAndDecrypt(storageKey: StorageKey, keyModel: TIMKeyModel): TIMResult<ByteArray, TIMEncryptedStorageError> {
         val encryptedDataResult = secureStorage.get(storageKey)
 
         return when (encryptedDataResult) {
-            is TIMResult.Failure -> TODO()
-            // TODO: Consider error cases here - MFJ (13/09/2021)
-            is TIMResult.Success -> keyModel.decrypt(encryptedDataResult.value, encryptionMethod).toTIMSuccess()
+            is TIMResult.Failure -> TIMEncryptedStorageError.SecureStorageFailed(encryptedDataResult.error).toTIMFailure()
+            is TIMResult.Success -> keyModel.decrypt(encryptedDataResult.value, encryptionMethod)
         }
     }
     //endregion

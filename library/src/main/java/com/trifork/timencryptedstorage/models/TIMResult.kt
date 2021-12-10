@@ -18,5 +18,5 @@ inline fun <Value> toTIMKeyServiceResult(block: () -> Value): TIMResult<Value, T
     try {
         block().toTIMSuccess()
     } catch (e: Throwable) {
-        TIMResult.Failure(e.mapToTIMKeyServiceError())
+        e.mapToTIMKeyServiceError().toTIMFailure()
     }

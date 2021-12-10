@@ -6,58 +6,49 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
+import com.trifork.timencryptedstorage.models.toTIMFailure
 import com.trifork.timencryptedstorage.models.toTIMSuccess
 import java.nio.ByteBuffer
-import java.security.Key
-import java.security.SecureRandom
-import javax.crypto.Cipher
+import java.nio.ReadOnlyBufferException
+import java.security.*
+import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 private const val aesAlgorithmName = "AES"
 
-fun TIMKeyModel.encrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): ByteArray {
-    val secretKeyResult = getAesKey()
-    return when (secretKeyResult) {
-        is TIMResult.Failure -> TODO()
-        is TIMResult.Success -> try {
-            when (encryptionMethod) {
-                TIMESEncryptionMethod.AesGcm -> GCMCipherHelper.encrypt(
-                    secretKeyResult.value,
-                    data
-                )
-            }
-        } catch (e: Throwable) {
-            TODO("NO EXCEPTION HANDLING")
-        }
-    }
-}
-
-fun TIMKeyModel.decrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): ByteArray {
-    val secretKeyResult = getAesKey()
-    return when (secretKeyResult) {
-        is TIMResult.Failure -> TODO()
-        is TIMResult.Success -> when (encryptionMethod) {
-            TIMESEncryptionMethod.AesGcm -> GCMCipherHelper.decrypt(
-                secretKeyResult.value,
-                data
-            )
-        }
-    }
-}
-
-internal fun TIMKeyModel.getAesKey(): TIMResult<Key, TIMEncryptedStorageError> {
+fun TIMKeyModel.encrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): TIMResult<ByteArray, TIMEncryptedStorageError> {
     return try {
-        val decodedKey = Base64.decode(key, Base64.DEFAULT)
-        val secretKey = SecretKeySpec(decodedKey, aesAlgorithmName)
-        secretKey.toTIMSuccess()
+        val secretKeyResult = getAesKey()
+        when (encryptionMethod) {
+            TIMESEncryptionMethod.AesGcm -> GCMCipherHelper.encrypt(
+                secretKeyResult,
+                data
+            ).toTIMSuccess()
+        }
     } catch (e: Throwable) {
-        TODO("Both decoding and key creation can fail")
+        TIMEncryptedStorageError.FailedToEncryptData(e).toTIMFailure()
     }
 }
 
-sealed class GCMCipherHelperError(error: Throwable) : Throwable() {
+fun TIMKeyModel.decrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): TIMResult<ByteArray, TIMEncryptedStorageError> {
+    return try {
+        val secretKeyResult = getAesKey()
+        when (encryptionMethod) {
+            TIMESEncryptionMethod.AesGcm -> GCMCipherHelper.decrypt(
+                secretKeyResult,
+                data
+            ).toTIMSuccess()
+        }
+    } catch (e: Exception) {
+        TIMEncryptedStorageError.FailedToDecryptData(e).toTIMFailure()
+    }
+}
 
+@Throws(IllegalArgumentException::class, IllegalArgumentException::class)
+internal fun TIMKeyModel.getAesKey(): Key {
+    val decodedKey = Base64.decode(key, Base64.DEFAULT)
+    return SecretKeySpec(decodedKey, aesAlgorithmName)
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -66,6 +57,7 @@ object GCMCipherHelper {
     private const val tagLengthInBits = 128
     private const val cipherAlgorithm = "$aesAlgorithmName/GCM/NoPadding"
 
+    @Throws(UnsupportedOperationException::class, InvalidKeyException::class, InvalidAlgorithmParameterException::class, IllegalStateException::class, IllegalBlockSizeException::class, BadPaddingException::class, AEADBadTagException::class)
     fun encrypt(key: Key, data: ByteArray): ByteArray {
         val iv = generateInitialisationVector()
         val parameterSpec = getGCMParamSpec(iv)
@@ -74,42 +66,38 @@ object GCMCipherHelper {
             init(Cipher.ENCRYPT_MODE, key, parameterSpec)
             doFinal(data)
         }
-
-        // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
         return combine(iv, cipherText)
     }
 
+    @Throws(UnsupportedOperationException::class, InvalidKeyException::class, InvalidAlgorithmParameterException::class, IllegalStateException::class, IllegalBlockSizeException::class, BadPaddingException::class, AEADBadTagException::class)
     fun decrypt(key: Key, data: ByteArray): ByteArray {
         val iv = getGCMParamSpecFromData(data)
 
-        // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
         return with(getCipherInstance()) {
             init(Cipher.DECRYPT_MODE, key, iv)
             doFinal(data, ivLengthInBytes, data.size - ivLengthInBytes)
         }
     }
 
+    @Throws(IllegalArgumentException::class, ReadOnlyBufferException::class, UnsupportedOperationException::class)
     private fun combine(iv: ByteArray, cipherText: ByteArray): ByteArray {
-        // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
         return ByteBuffer.allocate(iv.size + cipherText.size).apply {
             put(iv)
             put(cipherText)
         }.array()
     }
 
-    // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
-    //@Throws(GCMCipherHelperError::class)
+    @Throws(NoSuchAlgorithmException::class, NoSuchPaddingException::class)
     private fun getCipherInstance(): Cipher = Cipher.getInstance(cipherAlgorithm)
 
-    // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
+    @Throws(IllegalArgumentException::class)
     private fun getGCMParamSpecFromData(data: ByteArray) =
         GCMParameterSpec(tagLengthInBits, data, 0, ivLengthInBytes)
 
-    // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
+    @Throws(IllegalArgumentException::class)
     private fun getGCMParamSpec(iv: ByteArray): GCMParameterSpec =
         GCMParameterSpec(tagLengthInBits, iv)
 
-    // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
     private fun generateInitialisationVector(): ByteArray {
         val iv = ByteArray(ivLengthInBytes)
         SecureRandom().nextBytes(iv)
