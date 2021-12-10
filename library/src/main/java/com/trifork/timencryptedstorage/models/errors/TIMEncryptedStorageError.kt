@@ -3,8 +3,8 @@ package com.trifork.timencryptedstorage.models.errors
 sealed class TIMEncryptedStorageError : Throwable() {
 
     //region Encryption errors
-    class FailedToEncryptData(val error: Error?) : TIMEncryptedStorageError()
-    class FailedToDecryptData(val error: Error) : TIMEncryptedStorageError()
+    class FailedToEncryptData(val error: Throwable) : TIMEncryptedStorageError()
+    class FailedToDecryptData(val error: Throwable) : TIMEncryptedStorageError()
     class InvalidEncryptionMethod : TIMEncryptedStorageError()
     class InvalidEncryptionKey : TIMEncryptedStorageError()
     //endregion
@@ -21,9 +21,9 @@ sealed class TIMEncryptedStorageError : Throwable() {
     class UnexpectedData : TIMEncryptedStorageError()
     //endregion
 
-    fun errorDescription(): String {
-        return when (this) {
-            is FailedToEncryptData -> "Failed to encrypt data with specified key: ${error?.localizedMessage}"
+    override val message: String?
+        get() = when (this) {
+            is FailedToEncryptData -> "Failed to encrypt data with specified key: ${error.localizedMessage}"
             is KeyServiceFailed -> "The KeyService failed with error: $error"
             is SecureStorageFailed -> "The secure storage failed with error: $error"
             is FailedToDecryptData -> "Failed to decrypt data with specified key: $error"
@@ -31,7 +31,4 @@ sealed class TIMEncryptedStorageError : Throwable() {
             is InvalidEncryptionMethod -> "The encryption method is invalid. Did you remember to call the configure method?"
             is UnexpectedData -> "The secure storage loaded unexpected data. Failed to use the data."
         }
-    }
-
-
 }
