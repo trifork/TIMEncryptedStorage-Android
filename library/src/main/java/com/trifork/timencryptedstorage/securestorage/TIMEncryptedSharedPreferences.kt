@@ -10,6 +10,8 @@ import androidx.security.crypto.MasterKey
 import com.trifork.timencryptedstorage.StorageKey
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
+import com.trifork.timencryptedstorage.models.toTIMFailure
+import com.trifork.timencryptedstorage.models.toTIMSuccess
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import java.io.IOException
@@ -60,8 +62,8 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
     override fun get(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
         val dataString = sharedPreferences.getString(storageKey, null)
         return when (dataString) {
-            null -> TIMResult.Failure(TIMSecureStorageError.FailedToLoadData(Throwable("No data found for key $storageKey")))
-            else -> TIMResult.Success(dataString.asPreservedByteArray)
+            null -> TIMSecureStorageError.FailedToLoadData(Throwable("No data found for key $storageKey")).toTIMFailure()
+            else -> dataString.asPreservedByteArray.toTIMSuccess()
         }
     }
 
@@ -94,4 +96,7 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
     }
     //endregion
 
+/*    override fun createKey(secret: String): Deferred<TIMResult<TIMKeyModel, TIMKeyServiceError>> {
+        TODO("Not yet implemented")
+    }*/
 }

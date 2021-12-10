@@ -6,6 +6,7 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
+import com.trifork.timencryptedstorage.models.toTIMSuccess
 import java.nio.ByteBuffer
 import java.security.Key
 import java.security.SecureRandom
@@ -49,10 +50,14 @@ internal fun TIMKeyModel.getAesKey(): TIMResult<Key, TIMEncryptedStorageError> {
     return try {
         val decodedKey = Base64.decode(key, Base64.DEFAULT)
         val secretKey = SecretKeySpec(decodedKey, aesAlgorithmName)
-        TIMResult.Success(secretKey)
+        secretKey.toTIMSuccess()
     } catch (e: Throwable) {
         TODO("Both decoding and key creation can fail")
     }
+}
+
+sealed class GCMCipherHelperError(error: Throwable) : Throwable() {
+
 }
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -93,6 +98,7 @@ object GCMCipherHelper {
     }
 
     // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)
+    //@Throws(GCMCipherHelperError::class)
     private fun getCipherInstance(): Cipher = Cipher.getInstance(cipherAlgorithm)
 
     // TODO: NO EXCEPTION HANDLING - MFJ (14/09/2021)

@@ -10,13 +10,13 @@ sealed class TIMResult<out Value, out Failure> {
     companion object
 }
 
-fun <T> T.toTIMSucces(): TIMResult.Success<T> = TIMResult.Success(this)
+fun <T> T.toTIMSuccess(): TIMResult.Success<T> = TIMResult.Success(this)
 
 fun <Error: Throwable> Error.toTIMFailure() = TIMResult.Failure(this)
 
 inline fun <Value> toTIMKeyServiceResult(block: () -> Value): TIMResult<Value, TIMKeyServiceError> =
     try {
-        block().toTIMSucces()
+        block().toTIMSuccess()
     } catch (e: Throwable) {
         TIMResult.Failure(e.mapToTIMKeyServiceError())
     }

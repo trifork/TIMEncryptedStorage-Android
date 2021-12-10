@@ -7,7 +7,10 @@ import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
+import com.trifork.timencryptedstorage.models.toTIMFailure
+import com.trifork.timencryptedstorage.models.toTIMSuccess
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
+import com.trifork.timencryptedstorage.shared.extensions.GCMCipherHelperError
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
 import com.trifork.timencryptedstorage.shared.extensions.encrypt
 import kotlinx.coroutines.CoroutineScope
@@ -108,7 +111,7 @@ class TIMEncryptedStorage(
     ): TIMResult<Unit, TIMEncryptedStorageError> {
         val encryptedData = keyModel.encrypt(data, encryptionMethod)
         // TODO: Can we ever fail to write to EncryptedSharedPrefs? - MFJ (13/09/2021)
-        return TIMResult.Success(secureStorage.store(encryptedData, storageKey))
+        return secureStorage.store(encryptedData, storageKey).toTIMSuccess()
     }
 
     private fun handleKeyServiceResultAndDecryptData(
@@ -127,8 +130,7 @@ class TIMEncryptedStorage(
         return when (encryptedDataResult) {
             is TIMResult.Failure -> TODO()
             // TODO: Consider error cases here - MFJ (13/09/2021)
-            is TIMResult.Success ->
-                TIMResult.Success(keyModel.decrypt(encryptedDataResult.value, encryptionMethod))
+            is TIMResult.Success -> keyModel.decrypt(encryptedDataResult.value, encryptionMethod).toTIMSuccess()
         }
     }
     //endregion
@@ -182,7 +184,7 @@ class TIMEncryptedStorage(
                 // TODO: Ask Peter if any instances are still running where longSecret is nullable - MFJ (13/09/2021)
                 encryptAndStore(storageKey, data, keyServiceResult.value)
                 // TODO: Consider error cases here - MFJ (13/09/2021)
-                TIMResult.Success(TIMESKeyCreationResult(keyModel.keyId, keyModel.longSecret))
+                TIMESKeyCreationResult(keyModel.keyId, keyModel.longSecret).toTIMSuccess()
             }
         }
     }
