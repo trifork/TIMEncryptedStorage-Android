@@ -53,4 +53,13 @@ ext {
             jupiterEngine: "org.junit.jupiter:junit-jupiter-engine:$jUnit5_version"
     ]
     //endregion
+
+    //region mockk
+    mockk_version = "1.12.1"
+    mockk = [
+            mockk : "io.mockk:mockk:$mockk_version",
+            android: "io.mockk:mockk-android:$mockk_version",
+            jvm: "io.mockk:mockk-agent-jvm:$mockk_version"
+    ]
+    //endregion
 }

@@ -1,5 +1,6 @@
 package com.trifork.timencryptedstorage.keyservice
 
+import androidx.annotation.VisibleForTesting
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMKeyServiceConfiguration
@@ -15,7 +16,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.await
 
-class TIMKeyServiceImpl private constructor(
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+class TIMKeyServiceImpl(
     private val api: TIMKeyServiceAPI,
     private val version: TIMKeyServiceVersion
 ) : TIMKeyService {
@@ -73,10 +75,12 @@ class TIMKeyServiceImpl private constructor(
             config: TIMKeyServiceConfiguration
         ): TIMKeyServiceImpl {
 
-            //TODO
+            //TODO Separate in to some setup function, this is probably nice to have when developing, but should not be in the production version
             val httpLoggingInterceptor = HttpLoggingInterceptor()
             httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
             val okHttpClient = OkHttpClient.Builder().addInterceptor(httpLoggingInterceptor).build()
+
+
 
             return instance ?: TIMKeyServiceImpl(
                 api = Retrofit.Builder()
