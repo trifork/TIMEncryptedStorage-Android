@@ -15,8 +15,7 @@ sealed class TIMKeyServiceError: Throwable() {
     class UnableToCreateKey(): TIMKeyServiceError()
     class BadInternet(): TIMKeyServiceError()
     class PotentiallyNoInternet(): TIMKeyServiceError()
-    //TODO: Which of these two are correct? - JHE (09/12/2021)
-    class UnableToParse(): TIMKeyServiceError()
+    //TODO: Can we actually differentiate between UnableToDecode and Unknown error? - JHE (09/12/2021)
     class UnableToDecode(val error: Throwable): TIMKeyServiceError()
     class Unknown(val error: Throwable): TIMKeyServiceError()
 }
@@ -29,7 +28,6 @@ sealed class TIMKeyServiceErrorCode {
         const val KeyLocked2 = 403
         const val KeyMissing = 404
         const val UnableToCreateKey = 500
-        const val NewErrorCode = 500
     }
 }
 

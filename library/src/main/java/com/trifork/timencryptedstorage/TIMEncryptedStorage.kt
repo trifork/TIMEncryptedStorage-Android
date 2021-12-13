@@ -5,7 +5,6 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
-import com.trifork.timencryptedstorage.models.errors.mapToTIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.models.toTIMFailure

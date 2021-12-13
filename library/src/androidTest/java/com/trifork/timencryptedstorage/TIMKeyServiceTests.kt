@@ -23,9 +23,48 @@ import retrofit2.await
 class TIMKeyServiceTests {
 
     @Test
-    fun createKey_handle_error() = runBlocking {
+    fun createKey() = runBlocking {
         val service = TIMKeyServiceImpl(
-            mockedControllerHelperThrowHttpException(PotentiallyNoInternet),
+            stubbedControllerHelperTIMKeyModel(),
+            TIMKeyServiceVersion.V1
+        )
+        val createKeyResult = service.createKey(this, "").await() as TIMResult.Success
+
+        Assert.assertEquals(keyId, createKeyResult.value.keyId)
+        Assert.assertEquals(key, createKeyResult.value.key)
+        Assert.assertEquals(longSecret, createKeyResult.value.longSecret)
+    }
+
+    @Test
+    fun getKeyViaSecret() = runBlocking {
+        val service = TIMKeyServiceImpl(
+            stubbedControllerHelperTIMKeyModel(),
+            TIMKeyServiceVersion.V1
+        )
+        val getKeyViaSecretResult = service.getKeyViaSecret(this, "", "").await() as TIMResult.Success
+
+        Assert.assertEquals(keyId, getKeyViaSecretResult.value.keyId)
+        Assert.assertEquals(key, getKeyViaSecretResult.value.key)
+        Assert.assertEquals(longSecret, getKeyViaSecretResult.value.longSecret)
+    }
+
+    @Test
+    fun getKeyViaLongSecret() = runBlocking {
+        val service = TIMKeyServiceImpl(
+            stubbedControllerHelperTIMKeyModel(),
+            TIMKeyServiceVersion.V1
+        )
+        val getKeyViaLongSecretResult = service.getKeyViaLongSecret(this, "", "").await() as TIMResult.Success
+
+        Assert.assertEquals(keyId, getKeyViaLongSecretResult.value.keyId)
+        Assert.assertEquals(key, getKeyViaLongSecretResult.value.key)
+        Assert.assertEquals(longSecret, getKeyViaLongSecretResult.value.longSecret)
+    }
+
+    @Test
+    fun createKeyHandleTIMKeyServiceErrorCode() = runBlocking {
+        val service = TIMKeyServiceImpl(
+            stubbedControllerHelperThrowHttpException(PotentiallyNoInternet),
             TIMKeyServiceVersion.V1
         )
         val createKeyResult = service.createKey(this, "").await() as TIMResult.Failure
@@ -34,39 +73,70 @@ class TIMKeyServiceTests {
     }
 
     @Test
-    fun createKey_success() = runBlocking {
+    fun createKeyHandleRuntimeException() = runBlocking {
         val service = TIMKeyServiceImpl(
-            mockedControllerHelperReturn(),
+            stubbedControllerHelperThrowRuntimeException(),
             TIMKeyServiceVersion.V1
         )
-        val createKeyResult = service.createKey(this, "").await() as TIMResult.Success
+        val createKeyResult = service.createKey(this, "").await() as TIMResult.Failure
+        val failure = createKeyResult.error as TIMKeyServiceError.Unknown
 
-        Assert.assertEquals("keyId", createKeyResult.value.keyId)
+        Assert.assertEquals(TIMKeyServiceError.Unknown::class, failure::class)
+        Assert.assertEquals(runTimeExceptionErrorDescription, failure.error.message)
     }
 
-    private fun mockedControllerHelperReturn(): TIMKeyServiceAPI {
+    //region helper methods
+
+    private val keyId = "keyId"
+    private val key = "key"
+    private val longSecret = "longSecret"
+    private val runTimeExceptionErrorDescription = "A runtime exception"
+
+    private fun stubbedControllerHelperTIMKeyModel(): TIMKeyServiceAPI {
+        //Necessary for mockk not to hang indefinitely when calling await in below stub functions
         mockkStatic("retrofit2.KotlinExtensions")
-        return mockk<TIMKeyServiceAPI> {
+
+        //We stub all three methods in TIMKeyServiceAPI, returning a TIMKeyModel if the version is V1 and a second any parameter.
+        return mockk {
+            coEvery {
+                getKeyViaLongSecret(TIMKeyServiceVersion.V1.pathValue, any()).await()
+            } returns TIMKeyModel(keyId, key, longSecret)
+
+            coEvery {
+                getKeyViaSecret(TIMKeyServiceVersion.V1.pathValue, any()).await()
+            } returns TIMKeyModel(keyId, key, longSecret)
+
             coEvery {
                 createKey(TIMKeyServiceVersion.V1.pathValue, any()).await()
-            } returns TIMKeyModel("keyId", "", "")
+            } returns TIMKeyModel(keyId, key, longSecret)
         }
     }
 
-    private fun mockedControllerHelperThrowHttpException(returnCode: Int): TIMKeyServiceAPI {
+    private fun stubbedControllerHelperThrowHttpException(returnCode: Int): TIMKeyServiceAPI {
+        //We stub the code call on the returned HttpException to return the input returnCode
         val codeModel = mockk<HttpException> {
             every {
                 code()
             } returns returnCode
         }
 
-        return mockk<TIMKeyServiceAPI> {
+        //We stub the createKey call, returning the above defined HttpException
+        return mockk {
             coEvery {
-                getKeyViaSecret(any(), any())
                 createKey(TIMKeyServiceVersion.V1.pathValue, any())
             } throws codeModel
         }
     }
 
+    private fun stubbedControllerHelperThrowRuntimeException(): TIMKeyServiceAPI {
+        //We stub the createKey call, throwing a RuntimeException
+        return mockk {
+            coEvery {
+                createKey(TIMKeyServiceVersion.V1.pathValue, any())
+            } throws RuntimeException(runTimeExceptionErrorDescription)
+        }
+    }
+
+    //endregion
 }
 
