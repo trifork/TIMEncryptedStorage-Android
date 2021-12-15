@@ -44,9 +44,9 @@ class TIMEncryptedStorageTests {
         val enableResult = storage.enableBiometric(this, keyId, secret).await()
 
         Assert.assertEquals(TIMResult.Success::class, enableResult::class)
-        storage.storeViaBiometric(this, id, data, keyId)
+        storage.storeViaBiometric(this, id, data, keyId).await()
 
-        Assert.assertTrue(storage.hasValue(keyId))
+        Assert.assertTrue(storage.hasValue(id))
     }
 
     @Test
@@ -90,13 +90,16 @@ class TIMEncryptedStorageTests {
         val storeViaBioResult = storage.storeViaBiometricWithNewKey(this, id, data, keyId).await()
         Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
 
+        // Get it via bio to make sure it is accessible via the used longSecret
         val getViaBioResult = storage.getViaBiometric(this, id, keyId).await() as TIMResult.Success
 
         Assert.assertEquals(testKeyService.longSecret, getViaBioResult.value.longSecret)
         Assert.assertEquals(data.asPreservedString, getViaBioResult.value.data.asPreservedString)
 
-        storage.remove(keyId)
+        // Remove!
+        storage.removeLongSecret(keyId)
 
+        // It should be inaccessible with the longSecret now ...
         val getViaBioFailureResult = storage.getViaBiometric(this, id, keyId).await() as TIMResult.Failure
         val error = getViaBioFailureResult.error as TIMEncryptedStorageError.SecureStorageFailed
         Assert.assertEquals(TIMSecureStorageError.FailedToLoadData::class, error.error::class)
@@ -171,23 +174,6 @@ class TIMEncryptedStorageTests {
 
         Assert.assertEquals(loadedResult.value.data.asPreservedString, data.asPreservedString)
         Assert.assertEquals(loadedResult.value.longSecret, testKeyService.longSecret)
-    }
-
-    @Test
-    fun testWillBeginNetworkRequestClosureForBioOperations() = runBlocking {
-        val storage = TIMEncryptedStorage(
-            testStore,
-            testKeyService,
-            TIMESEncryptionMethod.AesGcm
-        )
-
-        storage.enableBiometric(this, keyId, secret).await()
-
-        val storeViaBioResult = storage.storeViaBiometric(this, id, data, keyId).await()
-        Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
-
-        val getViaBioResult = storage.getViaBiometric(this, id, keyId).await()
-        Assert.assertEquals(TIMResult.Success::class, getViaBioResult::class)
     }
 
 }
