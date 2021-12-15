@@ -8,16 +8,21 @@ import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceErrorCode.Comp
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceErrorCode.Companion.UnableToCreateKey
 import retrofit2.HttpException
 
-sealed class TIMKeyServiceError: Throwable() {
-    class BadPassword(): TIMKeyServiceError()
-    class KeyLocked(): TIMKeyServiceError()
-    class KeyMissing(): TIMKeyServiceError()
-    class UnableToCreateKey(): TIMKeyServiceError()
-    class BadInternet(): TIMKeyServiceError()
-    class PotentiallyNoInternet(): TIMKeyServiceError()
+sealed class TIMKeyServiceError : Throwable() {
+    class BadPassword : TIMKeyServiceError()
+    class KeyLocked : TIMKeyServiceError()
+    class KeyMissing : TIMKeyServiceError()
+    class UnableToCreateKey : TIMKeyServiceError()
+    class BadInternet : TIMKeyServiceError()
+    class PotentiallyNoInternet : TIMKeyServiceError()
+
+    /// Handles old versions of the key server, where the longSecret isn't returned.
+    //TODO: Determine whether the key server can still throw this error - JHE(15/12/2021)
+    class ResponseHasNoLongSecret : TIMKeyServiceError()
+
     //TODO: Can we actually differentiate between UnableToDecode and Unknown error? - JHE (09/12/2021)
-    class UnableToDecode(val error: Throwable): TIMKeyServiceError()
-    class Unknown(val error: Throwable): TIMKeyServiceError()
+    class UnableToDecode(val error: Throwable) : TIMKeyServiceError()
+    class Unknown(val error: Throwable) : TIMKeyServiceError()
 }
 
 sealed class TIMKeyServiceErrorCode {
@@ -32,14 +37,14 @@ sealed class TIMKeyServiceErrorCode {
 }
 
 fun Throwable.mapToTIMKeyServiceError(): TIMKeyServiceError {
-    if(this is HttpException) {
-        return when(val code = this.code()) {
+    if (this is HttpException) {
+        return when (val code = this.code()) {
             PotentiallyNoInternet -> TIMKeyServiceError.PotentiallyNoInternet()
             BadPassword -> TIMKeyServiceError.BadPassword()
             KeyLocked, KeyLocked2 -> TIMKeyServiceError.KeyLocked()
             KeyMissing -> TIMKeyServiceError.KeyMissing()
             UnableToCreateKey -> TIMKeyServiceError.UnableToCreateKey()
-            else -> if(code < 0) TIMKeyServiceError.BadInternet() else TIMKeyServiceError.Unknown(this)
+            else -> if (code < 0) TIMKeyServiceError.BadInternet() else TIMKeyServiceError.Unknown(this)
         }
     }
     return TIMKeyServiceError.Unknown(this)

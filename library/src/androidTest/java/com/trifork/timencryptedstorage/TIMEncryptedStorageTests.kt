@@ -90,14 +90,14 @@ class TIMEncryptedStorageTests {
         val storeViaBioResult = storage.storeViaBiometricWithNewKey(this, id, data, keyId).await()
         Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
 
-        val getViaBioResult = storage.getViaBiometric(id, keyId).await() as TIMResult.Success
+        val getViaBioResult = storage.getViaBiometric(this, id, keyId).await() as TIMResult.Success
 
         Assert.assertEquals(testKeyService.longSecret, getViaBioResult.value.longSecret)
         Assert.assertEquals(data.asPreservedString, getViaBioResult.value.data.asPreservedString)
 
         storage.remove(keyId)
 
-        val getViaBioFailureResult = storage.getViaBiometric(id, keyId).await() as TIMResult.Failure
+        val getViaBioFailureResult = storage.getViaBiometric(this, id, keyId).await() as TIMResult.Failure
         val error = getViaBioFailureResult.error as TIMEncryptedStorageError.SecureStorageFailed
         Assert.assertEquals(TIMSecureStorageError.FailedToLoadData::class, error.error::class)
     }
@@ -167,7 +167,7 @@ class TIMEncryptedStorageTests {
         Assert.assertEquals(testKeyService.keyId, storeViaBioResult.value.keyId)
         Assert.assertEquals(testKeyService.longSecret, storeViaBioResult.value.longSecret)
 
-        val loadedResult = storage.getViaBiometric(id, keyId).await() as TIMResult.Success
+        val loadedResult = storage.getViaBiometric(this, id, storeViaBioResult.value.keyId).await() as TIMResult.Success
 
         Assert.assertEquals(loadedResult.value.data.asPreservedString, data.asPreservedString)
         Assert.assertEquals(loadedResult.value.longSecret, testKeyService.longSecret)
@@ -186,7 +186,7 @@ class TIMEncryptedStorageTests {
         val storeViaBioResult = storage.storeViaBiometric(this, id, data, keyId).await()
         Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
 
-        val getViaBioResult = storage.getViaBiometric(id, keyId).await()
+        val getViaBioResult = storage.getViaBiometric(this, id, keyId).await()
         Assert.assertEquals(TIMResult.Success::class, getViaBioResult::class)
     }
 

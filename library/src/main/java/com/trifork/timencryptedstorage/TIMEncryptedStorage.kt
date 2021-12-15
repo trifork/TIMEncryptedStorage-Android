@@ -220,13 +220,40 @@ class TIMEncryptedStorage(
         }
     }
 
-    fun storeViaBiometricWithNewKey(scope: CoroutineScope, id: StorageKey, data: ByteArray, keyId: String): Deferred<TIMResult<TIMESKeyCreationResult, TIMEncryptedStorageError>> {
+    fun storeViaBiometricWithNewKey(scope: CoroutineScope, id: StorageKey, data: ByteArray, secret: String): Deferred<TIMResult<TIMESKeyCreationResult, TIMEncryptedStorageError>> = scope.async {
         // 1. Create new encryption key with secret
         // 2. Save longSecret for keyId via FaceID/TouchID
         // 3. Encrypt data with encryption key from response
         // 4. Store encrypted data in secure storage with id
         // 5. Return bool result for success + keyId
-        TODO()
+        val createKeyResult = keyService.createKey(scope, secret).await()
+
+        when (createKeyResult) {
+            is TIMResult.Failure -> TIMEncryptedStorageError.KeyServiceFailed(createKeyResult.error).toTIMFailure()
+            is TIMResult.Success -> {
+                val keyModel = createKeyResult.value
+                val longSecret = keyModel.longSecret
+
+                // TODO: Ask Peter if any instances are still running where longSecret is nullable - JHE (15/12/2021)
+                //if(longSecret == null) {
+                //    return TIMKeyServiceError.ResponseHasNoLongSecret().toTIMFailure()
+                //}
+
+                val storeLongSecretResult = storeLongSecret(keyModel.keyId, longSecret)
+
+                if (storeLongSecretResult is TIMResult.Failure) {
+                    return@async storeLongSecretResult.error.toTIMFailure()
+                }
+
+                val encryptResult = encryptAndStore(id, data, keyModel)
+
+                return@async when (encryptResult) {
+                    is TIMResult.Failure -> encryptResult.error.toTIMFailure()
+                    is TIMResult.Success -> TIMESKeyCreationResult(keyModel.keyId, keyModel.longSecret).toTIMSuccess()
+                }
+            }
+        }
+
     }
     //endregion
 
@@ -253,7 +280,34 @@ class TIMEncryptedStorage(
         return@async handleKeyServiceResultAndDecryptData(storageKey, keyServiceResult)
     }
 
-    fun getViaBiometric(id: StorageKey, keyId: String): Deferred<TIMResult<TIMESBiometricLoadResult, TIMEncryptedStorageError>> = TODO()
+    fun getViaBiometric(scope: CoroutineScope, id: StorageKey, keyId: String): Deferred<TIMResult<TIMESBiometricLoadResult, TIMEncryptedStorageError>> = scope.async {
+        // 1. Load longSecret for keyId via FaceID/TouchID
+        // 2. Get encryption key with keyId + longSecret
+        // 3. Load encrypted data from secure storage with id
+        // 4. Decrypt data with encryption key
+        // 5. Return decrypted data + longSecret
+
+        val secureStorageKey = longSecretSecureStoreId(keyId)
+        val longSecretResult = secureStorage.getBiometricProtected(secureStorageKey)
+
+        val longSecret = when (longSecretResult) {
+            is TIMResult.Failure -> return@async TIMEncryptedStorageError.SecureStorageFailed(longSecretResult.error).toTIMFailure()
+            is TIMResult.Success -> longSecretResult.value.asPreservedString
+        }
+
+        val getKeyViaLongSecretResult = keyService.getKeyViaLongSecret(scope, longSecret, keyId).await()
+
+        val timKeyModelResult = when(getKeyViaLongSecretResult) {
+            is TIMResult.Failure -> return@async TIMEncryptedStorageError.UnexpectedData().toTIMFailure()
+            is TIMResult.Success -> handleKeyServiceResultAndDecryptData(id, getKeyViaLongSecretResult)
+        }
+
+        return@async when (timKeyModelResult) {
+            is TIMResult.Failure -> timKeyModelResult.error.toTIMFailure()
+            is TIMResult.Success -> TIMESBiometricLoadResult(timKeyModelResult.value, longSecret).toTIMSuccess()
+        }
+
+    }
 
     fun enableBiometric(
         scope: CoroutineScope,
@@ -275,7 +329,7 @@ class TIMEncryptedStorage(
 
     private fun longSecretSecureStoreId(keyId: String) = "TIMEncryptedStorage.longSecret.$keyId"
 
-    private fun storeLongSecret(keyId: String, longSecret: String) : TIMResult<Unit, TIMEncryptedStorageError> {
+    private fun storeLongSecret(keyId: String, longSecret: String): TIMResult<Unit, TIMEncryptedStorageError> {
         val storeResult = secureStorage.storeBiometricProtected(longSecret.asPreservedByteArray, longSecretSecureStoreId(keyId))
 
         return when (storeResult) {
