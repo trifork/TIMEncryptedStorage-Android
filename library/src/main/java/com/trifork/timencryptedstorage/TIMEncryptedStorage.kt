@@ -8,6 +8,7 @@ import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
+import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
 import com.trifork.timencryptedstorage.shared.extensions.encrypt
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +44,10 @@ class TIMEncryptedStorage(
      * @param keyId The identifier for the key that was used when it was saved.
      * @return True of the item is present, otherwise false
      */
-    fun hasBiometricProtectedValue(storageKey: StorageKey, keyId: String): Boolean = TODO()
+    fun hasBiometricProtectedValue(storageKey: StorageKey, keyId: String): Boolean {
+        val secureStoreKey = longSecretSecureStoreId(keyId)
+        return secureStorage.hasBiometricProtectedValue(secureStoreKey) && secureStorage.hasValue(storageKey)
+    }
     //endregion
 
     //region Removal
@@ -197,17 +201,23 @@ class TIMEncryptedStorage(
     }
 
     fun storeViaBiometric(
+        scope: CoroutineScope,
         storageKey: StorageKey,
         data: ByteArray,
         keyId: String
-    ): Deferred<TIMResult<Unit, TIMEncryptedStorageError>> {
+    ): Deferred<TIMResult<Unit, TIMEncryptedStorageError>> = scope.async {
         // 1. Load longSecret for keyId via FaceID/TouchID
         // 2. Call store(id: id, data: data, keyId: keyId, longSecret: <loadedLongSecret>)
         // 3. Return result of store function
-        TODO()
+        val secureStorageKey = longSecretSecureStoreId(keyId)
+        val longSecretResult = secureStorage.getBiometricProtected(secureStorageKey)
 
-
-
+        return@async when (longSecretResult) {
+            is TIMResult.Failure -> TIMEncryptedStorageError.SecureStorageFailed(longSecretResult.error).toTIMFailure()
+            is TIMResult.Success -> {
+                store(scope, storageKey, data, keyId, longSecretResult.value.asPreservedString).await()
+            }
+        }
     }
 
     fun storeViaBiometricWithNewKey(scope: CoroutineScope, id: StorageKey, data: ByteArray, keyId: String): Deferred<TIMResult<TIMESKeyCreationResult, TIMEncryptedStorageError>> {
@@ -262,8 +272,6 @@ class TIMEncryptedStorage(
             }
         }
     }
-
-
 
     private fun longSecretSecureStoreId(keyId: String) = "TIMEncryptedStorage.longSecret.$keyId"
 

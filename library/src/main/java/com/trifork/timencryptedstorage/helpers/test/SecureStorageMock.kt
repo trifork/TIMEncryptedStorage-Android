@@ -13,15 +13,16 @@ class SecureStorageMockItem(id: String): TIMSecureStorageItem(id) {
 }
 
 class SecureStorageMock : TIMSecureStorage {
-    private val bioProtectedData = HashMap<StorageKey, ByteArray>()
-    private val protectedData = HashMap<StorageKey, ByteArray>()
+    //private val bioProtectedData = HashMap<SecureStorageMockItem, ByteArray>()
+    private val protectedData = HashMap<String, ByteArray>()
 
     override fun remove(storageKey: StorageKey) {
         protectedData.remove(storageKey)
     }
 
-    override fun store(data: ByteArray, storageItem: StorageKey) {
-        protectedData.put(storageItem, data)
+    override fun store(data: ByteArray, storageKey: StorageKey) {
+        protectedData.put(storageKey, data)
+        return
     }
 
     override fun get(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
@@ -32,11 +33,21 @@ class SecureStorageMock : TIMSecureStorage {
         return TIMSecureStorageError.FailedToLoadData(Throwable("No data found for key $storageKey")).toTIMFailure()
     }
 
-    override fun hasValue(storageKey: StorageKey): Boolean = protectedData[storageKey] != null
+    override fun hasValue(storageKey: StorageKey): Boolean {
+        return protectedData.containsKey(storageKey)
+    }
 
     override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
-        protectedData.put(storageKey, data)
-        //storageKey.isBioProtected = true
+        protectedData[storageKey] = data
         return Unit.toTIMSuccess()
+    }
+
+    override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean {
+        val con = protectedData.containsKey(storageKey)
+        return con
+    }
+
+    override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
+        return get(storageKey)
     }
 }

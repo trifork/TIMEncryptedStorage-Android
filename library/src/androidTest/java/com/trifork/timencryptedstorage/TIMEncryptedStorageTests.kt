@@ -44,7 +44,7 @@ class TIMEncryptedStorageTests {
         val enableResult = storage.enableBiometric(this, keyId, secret).await()
 
         Assert.assertEquals(TIMResult.Success::class, enableResult::class)
-        storage.storeViaBiometric(id, data, keyId)
+        storage.storeViaBiometric(this, id, data, keyId)
 
         Assert.assertTrue(storage.hasValue(keyId))
     }
@@ -67,6 +67,10 @@ class TIMEncryptedStorageTests {
         val enableBioResult = storage.enableBiometric(this, keyId, secret).await()
 
         Assert.assertEquals(TIMResult.Success::class, enableBioResult::class)
+
+        val storeViaBioResult = storage.storeViaBiometric(this, id, data, keyId).await()
+
+        Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
 
         Assert.assertTrue(storage.hasBiometricProtectedValue(id, keyId))
         Assert.assertFalse(storage.hasBiometricProtectedValue(id, "NotTheRightKeyId"))
@@ -179,7 +183,7 @@ class TIMEncryptedStorageTests {
 
         storage.enableBiometric(this, keyId, secret).await()
 
-        val storeViaBioResult = storage.storeViaBiometric(id, data, keyId).await()
+        val storeViaBioResult = storage.storeViaBiometric(this, id, data, keyId).await()
         Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
 
         val getViaBioResult = storage.getViaBiometric(id, keyId).await()

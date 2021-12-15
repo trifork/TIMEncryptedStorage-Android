@@ -11,7 +11,6 @@ import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
 interface TIMSecureStorage {
 
     // TODO: No handling of biometric is currently implemented - MFJ (25/08/2021)
-
     /**
      * Removes the entry for [storageKey] from the secure storage
      * @param storageKey The id of the entry to remove
@@ -39,4 +38,23 @@ interface TIMSecureStorage {
      * @return True if data for [storageKey] exists
      */
     fun hasValue(storageKey: StorageKey): Boolean
+
+
+    /**
+     * Saves data in the secure store with biometric protection (meaning that only Biometric login can unlock the access to the data)
+     * @param data Data to save
+     * @param storageKey The storageKey to identify the data
+     */
+    fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError>
+
+    /**
+     * Checks whether an item exists with biometric protection in the secure storage or not.
+     * @param storageKey The storageKey that identifies the data (and which is was saved with)
+     * @return True if the item exists, otherwise false
+     */
+    fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean
+
+
+    fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError>
+
 }

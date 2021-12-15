@@ -103,5 +103,16 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
 
     override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
         TODO("Not yet implemented")
+
+
+
+    }
+
+    override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
+        TODO("Not yet implemented")
     }
 }
