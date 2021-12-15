@@ -19,6 +19,8 @@ import java.security.GeneralSecurityException
 
 private const val TIMEncryptedSharedPreferencesName = "TIMESP"
 
+class SecureStorageItem(id: String) : TIMSecureStorageItem(id)
+
 class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
 
     /**
@@ -62,13 +64,12 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
     override fun get(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
         val dataString = sharedPreferences.getString(storageKey, null)
         return when (dataString) {
-            null -> TIMSecureStorageError.FailedToLoadData(Throwable("No data found for key $storageKey")).toTIMFailure()
+            null -> TIMSecureStorageError.FailedToLoadData(Throwable("No data found for key $storageKey}")).toTIMFailure()
             else -> dataString.asPreservedByteArray.toTIMSuccess()
         }
     }
 
     override fun hasValue(storageKey: StorageKey): Boolean = sharedPreferences.contains(storageKey)
-
 
     //region EncryptedSharedPreferences
     @Throws(GeneralSecurityException::class, IOException::class)
@@ -99,4 +100,8 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
 /*    override fun createKey(secret: String): Deferred<TIMResult<TIMKeyModel, TIMKeyServiceError>> {
         TODO("Not yet implemented")
     }*/
+
+    override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
+        TODO("Not yet implemented")
+    }
 }
