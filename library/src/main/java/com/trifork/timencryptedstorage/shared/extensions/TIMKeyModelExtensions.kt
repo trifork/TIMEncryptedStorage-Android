@@ -1,7 +1,6 @@
 package com.trifork.timencryptedstorage.shared.extensions
 
 import android.util.Base64
-import androidx.annotation.VisibleForTesting
 import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
@@ -31,6 +30,8 @@ fun TIMKeyModel.encrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod
     }
 }
 
+
+//Tag potentielt imod cipher?
 fun TIMKeyModel.decrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod): TIMResult<ByteArray, TIMEncryptedStorageError> {
     return try {
         val secretKeyResult = getAesKey()
@@ -51,7 +52,6 @@ internal fun TIMKeyModel.getAesKey(): Key {
     return SecretKeySpec(decodedKey, aesAlgorithmName)
 }
 
-@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 object GCMCipherHelper {
     private const val ivLengthInBytes = 12
     private const val tagLengthInBits = 128

@@ -7,6 +7,7 @@ import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceError
 import com.trifork.timencryptedstorage.models.keyservice.TIMESKeyCreationResult
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
+import com.trifork.timencryptedstorage.shared.BiometricCipherHelper
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
@@ -14,6 +15,7 @@ import com.trifork.timencryptedstorage.shared.extensions.encrypt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import javax.crypto.Cipher
 
 typealias StorageKey = String
 
@@ -27,7 +29,8 @@ typealias StorageKey = String
 class TIMEncryptedStorage(
     val secureStorage: TIMSecureStorage,
     private val keyService: TIMKeyService,
-    private val encryptionMethod: TIMESEncryptionMethod
+    private val encryptionMethod: TIMESEncryptionMethod,
+    private val biometricHelper: BiometricCipherHelper = BiometricCipherHelper()
 ) {
 
     //region Contains checks
@@ -326,7 +329,21 @@ class TIMEncryptedStorage(
             }
         }
     }
+    //endregion
 
+    //region Biometric helper methods
+    //TODO Error handling here
+    fun getEncryptCipher() : TIMResult<Cipher, TIMEncryptedStorageError> {
+        return biometricHelper.getInitializedCipherForEncryption().toTIMSuccess()
+    }
+    //TODO Error handling here
+    fun getDecryptCipher() : TIMResult<Cipher, TIMEncryptedStorageError> {
+        return biometricHelper.getInitializedCipherForDecryption().toTIMSuccess()
+    }
+
+    //endregion
+
+    //region Private helper
     private fun longSecretSecureStoreId(keyId: String) = "TIMEncryptedStorage.longSecret.$keyId"
 
     private fun storeLongSecret(keyId: String, longSecret: String): TIMResult<Unit, TIMEncryptedStorageError> {
@@ -337,7 +354,7 @@ class TIMEncryptedStorage(
             is TIMResult.Success -> Unit.toTIMSuccess()
         }
     }
-
     //endregion
+
 
 }

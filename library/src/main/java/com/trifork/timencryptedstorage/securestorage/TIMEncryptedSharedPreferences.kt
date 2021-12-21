@@ -19,8 +19,6 @@ import java.security.GeneralSecurityException
 
 private const val TIMEncryptedSharedPreferencesName = "TIMESP"
 
-class SecureStorageItem(id: String) : TIMSecureStorageItem(id)
-
 class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
 
     /**
@@ -97,15 +95,8 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
     }
     //endregion
 
-/*    override fun createKey(secret: String): Deferred<TIMResult<TIMKeyModel, TIMKeyServiceError>> {
-        TODO("Not yet implemented")
-    }*/
-
     override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
         TODO("Not yet implemented")
-
-
-
     }
 
     override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean {
