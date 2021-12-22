@@ -6,14 +6,13 @@ import java.security.KeyStore
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 
-class SecretKeyHelper(
-    private val blockMode: String = KeyProperties.BLOCK_MODE_CBC,
-    private val padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7,
-    private val algorithm: String = KeyProperties.KEY_ALGORITHM_AES
-) {
+object SecretKeyHelper {
+    private const val blockMode: String = KeyProperties.BLOCK_MODE_CBC
+    private const val padding: String = KeyProperties.ENCRYPTION_PADDING_PKCS7
+    private const val algorithm: String = KeyProperties.KEY_ALGORITHM_AES
 
-    private val keyProvider = "AndroidKeyStore"
-    private val keyName = "SECRET_KEY_NAME"
+    private const val keyProvider = "AndroidKeyStore"
+    private const val keyName = "SECRET_KEY_NAME"
 
     fun getOrCreateSecretKey(): SecretKey {
         //If a secret key exist return it
