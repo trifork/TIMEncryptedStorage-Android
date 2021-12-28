@@ -61,8 +61,8 @@ class TIMKeyServiceImpl(
             api.getKeyViaLongSecret(
                 version.pathValue,
                 TIMKeyRequestBody.GetKey.ViaLongSecret(
-                    longSecret,
-                    keyId
+                    keyId,
+                    longSecret
                 )
             ).await()
         }
