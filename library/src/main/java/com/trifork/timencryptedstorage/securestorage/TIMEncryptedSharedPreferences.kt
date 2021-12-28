@@ -90,20 +90,26 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
     private fun recreateEncryptedPrefs(appContext: Context): SharedPreferences {
         // Clear the data, since the data is either tampered, broken or Tink has created a new KeySet and we cannot recover
         appContext.getSharedPreferences(TIMEncryptedSharedPreferencesName, Context.MODE_PRIVATE)
-            .edit().clear().commit()
+            .edit()
+            .clear()
+            .commit()
         return getEncryptedPrefs(appContext)
     }
     //endregion
 
+    //TODO Is this function even necessary and correct? - JHE (22.12.21)
     override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
-        TODO("Not yet implemented")
+        store(data, storageKey)
+        return Unit.toTIMSuccess()
     }
 
+    //TODO Is this function necessary? - JHE (22.12.21)
     override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean {
-        TODO("Not yet implemented")
+        return hasValue(storageKey)
     }
 
+    //TODO Is this function necessary? - JHE (22.12.21)
     override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
-        TODO("Not yet implemented")
+        return get(storageKey)
     }
 }
