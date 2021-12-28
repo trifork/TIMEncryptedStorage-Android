@@ -6,11 +6,6 @@ import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
 import com.trifork.timencryptedstorage.models.toTIMFailure
 import com.trifork.timencryptedstorage.models.toTIMSuccess
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
-import com.trifork.timencryptedstorage.securestorage.TIMSecureStorageItem
-
-class SecureStorageMockItem(id: String): TIMSecureStorageItem(id) {
-    var isBioProtected : Boolean = false
-}
 
 class SecureStorageMock : TIMSecureStorage {
     //private val bioProtectedData = HashMap<SecureStorageMockItem, ByteArray>()
@@ -43,8 +38,7 @@ class SecureStorageMock : TIMSecureStorage {
     }
 
     override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean {
-        val con = protectedData.containsKey(storageKey)
-        return con
+        return protectedData.containsKey(storageKey)
     }
 
     override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {

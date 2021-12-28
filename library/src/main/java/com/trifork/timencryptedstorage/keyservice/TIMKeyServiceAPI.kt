@@ -35,7 +35,7 @@ interface TIMKeyServiceAPI {
     ): Call<TIMKeyModel>
 
     /**
-     * Gets an existing key if [TIMKeyRequestBody.GetKey.ViaLongSecret.keyId] is a verified match with [TIMKeyRequestBody.GetKey.ViaLongSecret.secret]
+     * Gets an existing key if [TIMKeyRequestBody.GetKey.ViaLongSecret.keyId] is a verified match with [TIMKeyRequestBody.GetKey.ViaLongSecret.longSecret]
      */
     @POST("$keyServicePath/{$keyServiceVersionPath}/${TIMKeyServiceEndpoint.GetKey}")
     fun getKeyViaLongSecret(
