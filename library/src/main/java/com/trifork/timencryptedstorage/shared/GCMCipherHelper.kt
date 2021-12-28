@@ -1,18 +1,27 @@
 package com.trifork.timencryptedstorage.shared
 
+import android.security.keystore.KeyProperties
+import com.trifork.timencryptedstorage.shared.CipherConstants.cipherTransformation
+import com.trifork.timencryptedstorage.shared.CipherConstants.ivLengthInBytes
+import com.trifork.timencryptedstorage.shared.CipherConstants.tagLengthInBits
 import java.nio.ByteBuffer
 import java.nio.ReadOnlyBufferException
 import java.security.*
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
 
+object CipherConstants {
+    const val cipherAlgorithm: String = KeyProperties.KEY_ALGORITHM_AES
+    const val cipherBlockMode: String = KeyProperties.BLOCK_MODE_GCM
+    const val cipherPadding: String = KeyProperties.ENCRYPTION_PADDING_NONE
+
+    const val cipherTransformation = "${cipherAlgorithm}/${cipherBlockMode}/${cipherPadding}"
+
+    const val ivLengthInBytes = 12
+    const val tagLengthInBits = 128
+}
+
 object GCMCipherHelper {
-    const val aesAlgorithmName = "AES"
-
-    private const val ivLengthInBytes = 12
-    private const val tagLengthInBits = 128
-    private const val cipherAlgorithm = "${aesAlgorithmName}/GCM/NoPadding"
-
     @Throws(UnsupportedOperationException::class, InvalidKeyException::class, InvalidAlgorithmParameterException::class, IllegalStateException::class, IllegalBlockSizeException::class, BadPaddingException::class, AEADBadTagException::class)
     fun encrypt(key: Key, data: ByteArray): ByteArray {
         val iv = generateInitialisationVector()
@@ -44,7 +53,7 @@ object GCMCipherHelper {
     }
 
     @Throws(NoSuchAlgorithmException::class, NoSuchPaddingException::class)
-    private fun getCipherInstance(): Cipher = Cipher.getInstance(cipherAlgorithm)
+    private fun getCipherInstance(): Cipher = Cipher.getInstance(cipherTransformation)
 
     @Throws(IllegalArgumentException::class)
     private fun getGCMParamSpecFromData(data: ByteArray) =

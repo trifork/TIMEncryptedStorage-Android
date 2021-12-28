@@ -7,8 +7,8 @@ import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.models.toTIMFailure
 import com.trifork.timencryptedstorage.models.toTIMSuccess
+import com.trifork.timencryptedstorage.shared.CipherConstants
 import com.trifork.timencryptedstorage.shared.GCMCipherHelper
-import com.trifork.timencryptedstorage.shared.GCMCipherHelper.aesAlgorithmName
 import java.security.Key
 import javax.crypto.spec.SecretKeySpec
 
@@ -44,5 +44,5 @@ fun TIMKeyModel.decrypt(data: ByteArray, encryptionMethod: TIMESEncryptionMethod
 @Throws(IllegalArgumentException::class, IllegalArgumentException::class)
 internal fun TIMKeyModel.getAesKey(): Key {
     val decodedKey = Base64.decode(key, Base64.DEFAULT)
-    return SecretKeySpec(decodedKey, aesAlgorithmName)
+    return SecretKeySpec(decodedKey, CipherConstants.cipherAlgorithm)
 }
