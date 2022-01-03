@@ -322,16 +322,18 @@ class TIMEncryptedStorage(
     }
 
     private fun getBiometricEncryptedAndDecryptData(cipher: Cipher, keyId: String): TIMResult<String, TIMEncryptedStorageError> {
-        val secureStorageKey = longSecretSecureStoreId(keyId)
-        val biometricProtectedResult = getBiometricEncryptedData(secureStorageKey)
+        val biometricProtectedResult = getBiometricEncryptedData(longSecretSecureStoreId(keyId))
 
-        return when (biometricProtectedResult) {
+        val biometricEncryptedData = when (biometricProtectedResult) {
             is TIMResult.Failure -> return biometricProtectedResult
-            is TIMResult.Success -> {
-                val biometricEncryptedData = biometricProtectedResult.value
-                val decryptedData = BiometricCipherHelper.decrypt(cipher, biometricEncryptedData.encryptedData)
-                decryptedData.asPreservedString.toTIMSuccess()
-            }
+            is TIMResult.Success -> biometricProtectedResult.value
+        }
+
+        val decryptedDataResult = BiometricCipherHelper.decrypt(cipher, biometricEncryptedData.encryptedData)
+
+        return when (decryptedDataResult) {
+            is TIMResult.Failure -> decryptedDataResult
+            is TIMResult.Success -> decryptedDataResult.value.asPreservedString.toTIMSuccess()
         }
     }
 
@@ -340,7 +342,6 @@ class TIMEncryptedStorage(
      * @param [keyId] the keyId used to save the data
      * @return [BiometricEncryptedData] object where the initialization vector (IV) and biometricEncryptedData can be found
      */
-    //TODO Should we only return the IV here?
     private fun getBiometricEncryptedData(keyId: String): TIMResult<BiometricEncryptedDataHelper.BiometricEncryptedData, TIMEncryptedStorageError> {
         val storeResult = secureStorage.getBiometricProtected(keyId)
 
@@ -371,13 +372,28 @@ class TIMEncryptedStorage(
 
         storeLongSecret(keyModel.keyId, keyModel.longSecret, cipher)
     }
+
+
+    /**
+     * Enables biometric protection for a keyId, by saving the `longSecret` with biometric protection.
+     * @param keyId The identifier for the key that was created with the `longSecret`.
+     * @param longSecret The longSecret which was created with the `keyId`.
+     * @param cipher the cipher which should be used to encrypt the `longSecret`.
+     */
+    fun enableBiometric(
+        keyId: String,
+        longSecret: String,
+        cipher: Cipher
+    ): TIMResult<Unit, TIMEncryptedStorageError> {
+        return storeLongSecret(keyId, longSecret, cipher)
+    }
+
     //endregion
 
     //region Biometric helper methods
 
-    //TODO Error handling here
     fun getEncryptCipher(): TIMResult<Cipher, TIMEncryptedStorageError> {
-        return BiometricCipherHelper.getInitializedCipherForEncryption().toTIMSuccess()
+        return BiometricCipherHelper.getInitializedCipherForEncryption()
     }
 
     /**
@@ -388,13 +404,12 @@ class TIMEncryptedStorage(
     fun getDecryptCipher(keyId: String): TIMResult<Cipher, TIMEncryptedStorageError> {
         val biometricEncryptedDataResult = getBiometricEncryptedData(longSecretSecureStoreId(keyId))
 
-        //TODO Do we want to add another error here instead of just parsing the error from getBiometricEncryptedData?
         val initializationVector = when (biometricEncryptedDataResult) {
-            is TIMResult.Failure -> return biometricEncryptedDataResult.error.toTIMFailure()
+            is TIMResult.Failure -> return biometricEncryptedDataResult
             is TIMResult.Success -> biometricEncryptedDataResult.value.initializationVector
         }
 
-        return BiometricCipherHelper.getInitializedCipherForDecryption(initializationVector).toTIMSuccess()
+        return BiometricCipherHelper.getInitializedCipherForDecryption(initializationVector)
     }
 
     /**
@@ -407,7 +422,12 @@ class TIMEncryptedStorage(
     private fun storeLongSecret(keyId: String, longSecret: String, cipher: Cipher): TIMResult<Unit, TIMEncryptedStorageError> {
 
         //TODO Error handling
-        val encryptedData = BiometricCipherHelper.encrypt(cipher, longSecret.asPreservedByteArray)
+        val encryptedDataResult = BiometricCipherHelper.encrypt(cipher, longSecret.asPreservedByteArray)
+
+        val encryptedData = when (encryptedDataResult) {
+            is TIMResult.Failure -> return encryptedDataResult
+            is TIMResult.Success -> encryptedDataResult.value
+        }
 
         //Create a BiometricEncryptedData json string, for storing
         val biometricEncryptedData = BiometricEncryptedDataHelper.biometricEncryptedDataJSON(

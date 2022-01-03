@@ -6,7 +6,8 @@ sealed class TIMEncryptedStorageError : Throwable() {
     class FailedToEncryptData(val error: Throwable) : TIMEncryptedStorageError()
     class FailedToDecryptData(val error: Throwable) : TIMEncryptedStorageError()
     class InvalidEncryptionMethod : TIMEncryptedStorageError()
-    class InvalidEncryptionKey : TIMEncryptedStorageError()
+    class InvalidEncryptionKey(val error: Throwable) : TIMEncryptedStorageError()
+    class InvalidCipher(val error: Throwable): TIMEncryptedStorageError()
     //endregion
 
     //region KeySever errors
@@ -27,7 +28,8 @@ sealed class TIMEncryptedStorageError : Throwable() {
             is KeyServiceFailed -> "The KeyService failed with error: $error"
             is SecureStorageFailed -> "The secure storage failed with error: $error"
             is FailedToDecryptData -> "Failed to decrypt data with specified key: $error"
-            is InvalidEncryptionKey -> "The encryption key is invalid."
+            is InvalidEncryptionKey -> "The encryption key is invalid: $error"
+            is InvalidCipher -> "The cipher could not be instantiated: $error"
             is InvalidEncryptionMethod -> "The encryption method is invalid. Did you remember to call the configure method?"
             is UnexpectedData -> "The secure storage loaded unexpected data. Failed to use the data."
         }

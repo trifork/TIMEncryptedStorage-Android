@@ -8,19 +8,21 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
+import com.trifork.timencryptedstorage.shared.BiometricCipherHelper
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
+import javax.crypto.Cipher
 
 @RunWith(AndroidJUnit4::class)
 class TIMEncryptedStorageTests {
 
     private val testStore = SecureStorageMock()
     private val testKeyService = TIMKeyServiceStub()
-    private val biometricCipherHelper = com.trifork.timencryptedstorage.shared.BiometricCipherHelper
+    private val biometricCipherHelper = BiometricCipherHelper
     private val id = "test"
     private val data = "testData".asPreservedByteArray
     private val secret = "1234"
@@ -39,7 +41,7 @@ class TIMEncryptedStorageTests {
         storage.remove(id)
         Assert.assertFalse(storage.hasValue(id))
 
-        val enableResult = storage.enableBiometric(this, keyId, secret, biometricCipherHelper.getInitializedCipherForEncryption()).await()
+        val enableResult = storage.enableBiometric(this, keyId, secret, getEncryptionCipher()).await()
 
         Assert.assertEquals(TIMResult.Success::class, enableResult::class)
 
@@ -61,7 +63,7 @@ class TIMEncryptedStorageTests {
         Assert.assertFalse(storage.hasBiometricProtectedValue(id, keyId)) //Not bio protected!
         storage.remove(id)
 
-        val enableBioResult = storage.enableBiometric(this, keyId, secret, biometricCipherHelper.getInitializedCipherForEncryption()).await()
+        val enableBioResult = storage.enableBiometric(this, keyId, secret, getEncryptionCipher()).await()
 
         Assert.assertEquals(TIMResult.Success::class, enableBioResult::class)
 
@@ -76,10 +78,10 @@ class TIMEncryptedStorageTests {
     @Test
     fun testRemoveLongSecret() = runBlocking {
         val storage = createTIMEncryptedStorage()
-        val encryptionCipherOne = biometricCipherHelper.getInitializedCipherForEncryption()
-        val encryptionCipherTwo = biometricCipherHelper.getInitializedCipherForEncryption()
-        val decryptionCipherOne = biometricCipherHelper.getInitializedCipherForDecryption(encryptionCipherTwo.iv)
-        val decryptionCipherTwo = biometricCipherHelper.getInitializedCipherForDecryption(encryptionCipherTwo.iv)
+        val encryptionCipherOne = getEncryptionCipher()
+        val encryptionCipherTwo = getEncryptionCipher()
+        val decryptionCipherOne = getDecryptionCipher(encryptionCipherTwo.iv)
+        val decryptionCipherTwo = getDecryptionCipher(encryptionCipherTwo.iv)
 
         val enableBioResult = storage.enableBiometric(this, keyId, secret, encryptionCipherOne).await()
         Assert.assertEquals(TIMResult.Success::class, enableBioResult::class)
@@ -145,8 +147,8 @@ class TIMEncryptedStorageTests {
     @Test
     fun testStoreViaBiometricWithNewKey() = runBlocking {
         val storage = createTIMEncryptedStorage()
-        val encryptionCipherOne = biometricCipherHelper.getInitializedCipherForEncryption()
-        val decryptionCipherTwo = biometricCipherHelper.getInitializedCipherForDecryption(encryptionCipherOne.iv)
+        val encryptionCipherOne = getEncryptionCipher()
+        val decryptionCipherTwo = getDecryptionCipher(encryptionCipherOne.iv)
 
         val storeViaBioResult = storage.storeViaBiometricWithNewKey(this, id, data, secret, encryptionCipherOne).await() as TIMResult.Success
 
@@ -167,6 +169,17 @@ class TIMEncryptedStorageTests {
         testKeyService,
         TIMESEncryptionMethod.AesGcm
     )
+
+    private fun getEncryptionCipher() : Cipher {
+        val encryptionCipher = biometricCipherHelper.getInitializedCipherForEncryption() as TIMResult.Success
+        return encryptionCipher.value
+    }
+
+    private fun getDecryptionCipher(initializationVector: ByteArray) : Cipher {
+        val encryptionCipher = biometricCipherHelper.getInitializedCipherForDecryption(initializationVector) as TIMResult.Success
+        return encryptionCipher.value
+    }
+
     //endregion
 
 }
