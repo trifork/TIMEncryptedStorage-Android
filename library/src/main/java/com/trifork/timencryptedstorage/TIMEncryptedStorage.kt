@@ -166,20 +166,23 @@ class TIMEncryptedStorage(
         storageKey: StorageKey,
         data: ByteArray,
         secret: String
-    ): Deferred<TIMResult.Success<TIMESKeyCreationResult>> = scope.async {
+    ): Deferred<TIMResult<TIMESKeyCreationResult, TIMEncryptedStorageError>> = scope.async {
         // 1. Create new encryption key with secret
         // 2. Encrypt data with encryption key from response
         // 3. Store encrypted data in secure storage with id
         // 4. Return bool result for success + keyId
         val keyServiceResult = keyService.createKey(scope, secret).await()
         val keyModel = when (keyServiceResult) {
-            is TIMResult.Failure -> TODO()
+            is TIMResult.Failure -> return@async TIMEncryptedStorageError.KeyServiceFailed(keyServiceResult.error).toTIMFailure()
             is TIMResult.Success -> keyServiceResult.value
         }
 
-        // TODO: Ask Peter if any instances are still running where longSecret is nullable - MFJ (13/09/2021)
-        encryptAndStore(storageKey, data, keyServiceResult.value)
-        // TODO: Consider error cases here - MFJ (13/09/2021)
+        val encryptAndStoreResult = encryptAndStore(storageKey, data, keyServiceResult.value)
+
+        if(encryptAndStoreResult is TIMResult.Failure) {
+            return@async TIMEncryptedStorageError.FailedToEncryptData(encryptAndStoreResult.error).toTIMFailure()
+        }
+
         TIMESKeyCreationResult(keyModel.keyId, keyModel.longSecret).toTIMSuccess()
     }
 
@@ -247,11 +250,6 @@ class TIMEncryptedStorage(
                 val keyModel = createKeyResult.value
                 val longSecret = keyModel.longSecret
 
-                // TODO: Ask Peter if any instances are still running where longSecret is nullable - JHE (15/12/2021)
-                //if(longSecret == null) {
-                //    return TIMKeyServiceError.ResponseHasNoLongSecret().toTIMFailure()
-                //}
-
                 val storeLongSecretResult = storeLongSecret(keyModel.keyId, longSecret, cipher)
 
                 if (storeLongSecretResult is TIMResult.Failure) {
@@ -318,7 +316,6 @@ class TIMEncryptedStorage(
             is TIMResult.Failure -> timKeyModelResult.error.toTIMFailure()
             is TIMResult.Success -> TIMESBiometricLoadResult(timKeyModelResult.value, longSecret).toTIMSuccess()
         }
-
     }
 
     private fun getBiometricEncryptedAndDecryptData(cipher: Cipher, keyId: String): TIMResult<String, TIMEncryptedStorageError> {

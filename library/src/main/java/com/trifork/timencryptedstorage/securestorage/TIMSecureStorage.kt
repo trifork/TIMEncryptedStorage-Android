@@ -10,7 +10,6 @@ import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
  */
 interface TIMSecureStorage {
 
-    // TODO: No handling of biometric is currently implemented - MFJ (25/08/2021)
     /**
      * Removes the entry for [storageKey] from the secure storage
      * @param storageKey The id of the entry to remove

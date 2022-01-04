@@ -45,13 +45,10 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
         }
     }
 
-    private fun performEditAndCommit(action: (SharedPreferences.Editor) -> Unit) {
-        sharedPreferences.edit(commit = true, action)
-    }
-
     override fun remove(storageKey: StorageKey) =
         performEditAndCommit { it.remove(storageKey) }
 
+    //region store
     override fun store(
         data: ByteArray,
         storageKey: StorageKey
@@ -59,6 +56,14 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
         it.putString(storageKey, data.asPreservedString)
     }
 
+    //TODO Is this function even necessary and correct? - JHE (22.12.21)
+    override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
+        return store(data, storageKey).toTIMSuccess()
+    }
+    //endregion
+
+
+    //region get
     override fun get(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
         val dataString = sharedPreferences.getString(storageKey, null)
         return when (dataString) {
@@ -67,7 +72,14 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
         }
     }
 
+    //TODO Is this function necessary? - JHE (22.12.21)
+    override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> = get(storageKey)
+
     override fun hasValue(storageKey: StorageKey): Boolean = sharedPreferences.contains(storageKey)
+
+    //TODO Is this function necessary? - JHE (22.12.21)
+    override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean = hasValue(storageKey)
+    //endregion
 
     //region EncryptedSharedPreferences
     @Throws(GeneralSecurityException::class, IOException::class)
@@ -97,19 +109,7 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
     }
     //endregion
 
-    //TODO Is this function even necessary and correct? - JHE (22.12.21)
-    override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
-        store(data, storageKey)
-        return Unit.toTIMSuccess()
-    }
-
-    //TODO Is this function necessary? - JHE (22.12.21)
-    override fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean {
-        return hasValue(storageKey)
-    }
-
-    //TODO Is this function necessary? - JHE (22.12.21)
-    override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
-        return get(storageKey)
+    private fun performEditAndCommit(action: (SharedPreferences.Editor) -> Unit) {
+        sharedPreferences.edit(commit = true, action)
     }
 }

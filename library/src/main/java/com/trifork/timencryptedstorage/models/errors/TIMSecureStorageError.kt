@@ -6,5 +6,5 @@ sealed class TIMSecureStorageError(val source: Throwable? = null) : Throwable() 
     class FailedToLoadData(error: Throwable) : TIMSecureStorageError(error)
     class FailedToStoreData(error: Throwable) : TIMSecureStorageError(error)
 
-    class AuthenticationFailedForData() : TIMSecureStorageError()
+    class AuthenticationFailedForData : TIMSecureStorageError()
 }
