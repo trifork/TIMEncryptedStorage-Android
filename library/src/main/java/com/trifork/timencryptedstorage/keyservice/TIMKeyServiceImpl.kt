@@ -80,8 +80,6 @@ class TIMKeyServiceImpl(
             httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
             val okHttpClient = OkHttpClient.Builder().addInterceptor(httpLoggingInterceptor).build()
 
-
-
             return instance ?: TIMKeyServiceImpl(
                 api = Retrofit.Builder()
                     .baseUrl(config.realmBaseUrl)

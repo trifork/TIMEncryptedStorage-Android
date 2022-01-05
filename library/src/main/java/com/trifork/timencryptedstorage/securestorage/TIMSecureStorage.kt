@@ -38,7 +38,6 @@ interface TIMSecureStorage {
      */
     fun hasValue(storageKey: StorageKey): Boolean
 
-
     /**
      * Saves data in the secure store with biometric protection (meaning that only Biometric login can unlock the access to the data)
      * @param data Data to save
@@ -53,7 +52,11 @@ interface TIMSecureStorage {
      */
     fun hasBiometricProtectedValue(storageKey: StorageKey): Boolean
 
-
+    /**
+     * Gets biometric protected data from the secure storage - this will prompt the user for biometric verification.
+     * @param storageKey The item that identifies the data (and which is was saved with)
+     * @return If there is data for the specified item, it will return the Data object, otherwise TIMSecureStorageError
+     */
     fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError>
 
 }

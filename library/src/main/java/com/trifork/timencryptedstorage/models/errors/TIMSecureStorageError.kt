@@ -2,9 +2,8 @@ package com.trifork.timencryptedstorage.models.errors
 
 sealed class TIMSecureStorageError(val source: Throwable? = null) : Throwable() {
 
-    // TODO: Fill out the blanks here when service is up and running - MFJ (10/09/2021)
     class FailedToLoadData(error: Throwable) : TIMSecureStorageError(error)
     class FailedToStoreData(error: Throwable) : TIMSecureStorageError(error)
-
+    //TODO I have a hard time figuring out how and when this happens JCH (04.12.21)
     class AuthenticationFailedForData : TIMSecureStorageError()
 }

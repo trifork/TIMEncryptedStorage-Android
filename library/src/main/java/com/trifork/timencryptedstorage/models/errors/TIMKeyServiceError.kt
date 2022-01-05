@@ -6,7 +6,9 @@ import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceErrorCode.Comp
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceErrorCode.Companion.KeyMissing
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceErrorCode.Companion.PotentiallyNoInternet
 import com.trifork.timencryptedstorage.models.errors.TIMKeyServiceErrorCode.Companion.UnableToCreateKey
+import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
+import java.lang.RuntimeException
 
 sealed class TIMKeyServiceError : Throwable() {
     class BadPassword : TIMKeyServiceError()
@@ -16,11 +18,6 @@ sealed class TIMKeyServiceError : Throwable() {
     class BadInternet : TIMKeyServiceError()
     class PotentiallyNoInternet : TIMKeyServiceError()
 
-    /// Handles old versions of the key server, where the longSecret isn't returned.
-    //TODO: Determine whether the key server can still throw this error - JHE(15/12/2021)
-    class ResponseHasNoLongSecret : TIMKeyServiceError()
-
-    //TODO: Can we actually differentiate between UnableToDecode and Unknown error? - JHE (09/12/2021)
     class UnableToDecode(val error: Throwable) : TIMKeyServiceError()
     class Unknown(val error: Throwable) : TIMKeyServiceError()
 }
@@ -46,6 +43,9 @@ fun Throwable.mapToTIMKeyServiceError(): TIMKeyServiceError {
             UnableToCreateKey -> TIMKeyServiceError.UnableToCreateKey()
             else -> if (code < 0) TIMKeyServiceError.BadInternet() else TIMKeyServiceError.Unknown(this)
         }
+    }
+    else if (this is SerializationException) {
+        return TIMKeyServiceError.UnableToDecode(this)
     }
     return TIMKeyServiceError.Unknown(this)
 }
