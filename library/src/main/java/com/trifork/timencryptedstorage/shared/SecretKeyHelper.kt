@@ -10,7 +10,6 @@ import java.security.KeyStore
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 
-//TODO Do we need to vary the keyName in case the user has two apps with the TIMSDK or two users are using the same device?
 object SecretKeyHelper {
     private const val keyProvider = "AndroidKeyStore"
     private const val keyName = "TIM_SECRET_KEY"

@@ -56,7 +56,7 @@ class TIMEncryptedSharedPreferences(context: Context) : TIMSecureStorage {
         it.putString(storageKey, data.asPreservedString)
     }
 
-    //TODO Is this function even necessary and correct? - JHE (22.12.21)
+    //TODO Is this function even necessary? - JHE (22.12.21)
     override fun storeBiometricProtected(data: ByteArray, storageKey: StorageKey): TIMResult<Unit, TIMSecureStorageError> {
         return store(data, storageKey).toTIMSuccess()
     }

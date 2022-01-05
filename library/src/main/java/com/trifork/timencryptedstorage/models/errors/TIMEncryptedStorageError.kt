@@ -7,7 +7,7 @@ sealed class TIMEncryptedStorageError : Throwable() {
     class FailedToDecryptData(val error: Throwable) : TIMEncryptedStorageError()
     class InvalidEncryptionMethod : TIMEncryptedStorageError()
     class InvalidEncryptionKey(val error: Throwable) : TIMEncryptedStorageError()
-    class InvalidCipher(val error: Throwable): TIMEncryptedStorageError()
+    class InvalidCipher(val error: Throwable) : TIMEncryptedStorageError()
     //endregion
 
     //region KeySever errors
@@ -22,6 +22,11 @@ sealed class TIMEncryptedStorageError : Throwable() {
     class UnexpectedData : TIMEncryptedStorageError()
     //endregion
 
+    //region Biometric helper
+    class FailedToEncodeData(val error: Throwable): TIMEncryptedStorageError()
+    class FailedToDecodeData(val error: Throwable): TIMEncryptedStorageError()
+    //endregion
+
     override val message: String?
         get() = when (this) {
             is FailedToEncryptData -> "Failed to encrypt data with specified key: ${error.localizedMessage}"
@@ -31,6 +36,8 @@ sealed class TIMEncryptedStorageError : Throwable() {
             is InvalidEncryptionKey -> "The encryption key is invalid: $error"
             is InvalidCipher -> "The cipher could not be instantiated: $error"
             is InvalidEncryptionMethod -> "The encryption method is invalid. Did you remember to call the configure method?"
+            is FailedToEncodeData -> "Encoding of the biometric encrypted data failed: $error"
+            is FailedToDecodeData -> "Decoding of the stored biometric encrypted data failed: $error"
             is UnexpectedData -> "The secure storage loaded unexpected data. Failed to use the data."
         }
 }

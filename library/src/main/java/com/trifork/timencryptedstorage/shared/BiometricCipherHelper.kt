@@ -14,6 +14,11 @@ import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
+/**
+ * BiometricEncryptedDataHelper is a util object that can create a bytearray for storing biometric encrypted data.
+ * The biometric encrypted data and its initialization vector (IV) is encoded into a json string before being turned into a bytearray for storing.
+ * The IV is necessary when creating the decryption cipher and is therefore stored with the encrypted data.
+ */
 object BiometricEncryptedDataHelper {
 
     @Serializable
@@ -22,18 +27,37 @@ object BiometricEncryptedDataHelper {
         val initializationVector: ByteArray
     )
 
-    fun biometricEncryptedDataJSON(data: ByteArray, initializationVector: ByteArray): ByteArray {
+    /**
+     * Converts biometric encrypted data and its initialization vector (IV) into a serializable [BiometricEncryptedData] object, serializes it and preserves it as a bytearray
+     * @param data The biometric encrypted data
+     * @param initializationVector The initialization vector from the biometric cipher
+     * @return A bytearray representation of the created [BiometricEncryptedData] object
+     */
+    fun biometricEncryptedDataJSON(data: ByteArray, initializationVector: ByteArray): TIMResult<ByteArray, TIMEncryptedStorageError> {
         val biometricEncryptedData = BiometricEncryptedData(
             data,
             initializationVector
         )
 
-        return Json.encodeToString(biometricEncryptedData).asPreservedByteArray
+        return try {
+            Json.encodeToString(biometricEncryptedData).asPreservedByteArray.toTIMSuccess()
+        }
+        catch (throwable: Throwable) {
+            TIMEncryptedStorageError.FailedToEncodeData(throwable).toTIMFailure()
+        }
     }
 
-    fun biometricEncryptedData(data: ByteArray): BiometricEncryptedData {
-        //TODO Can actually fail if the stored string is in a different format, handle JsonDecodingException
-        return Json.decodeFromString(data.asPreservedString)
+    /**
+     * Converts the stored bytearray containing the encrypted data and its initialization vector (IV) into a serializable [BiometricEncryptedData] object
+     * @param data The stored bytearray
+     * @return A [BiometricEncryptedData] object containing the biometric encrypted data and the (IV) from the encryption cipher
+     */
+    fun biometricEncryptedData(data: ByteArray): TIMResult<BiometricEncryptedData, TIMEncryptedStorageError> {
+        return try {
+            Json.decodeFromString<BiometricEncryptedData>(data.asPreservedString).toTIMSuccess()
+        } catch (throwable: Throwable) {
+            TIMEncryptedStorageError.FailedToDecodeData(throwable).toTIMFailure()
+        }
     }
 }
 
@@ -54,7 +78,6 @@ object BiometricCipherHelper {
             TIMEncryptedStorageError.FailedToDecryptData(throwable).toTIMFailure()
         }
     }
-
     //endregion
 
     //region Initialization of encryption and decryption ciphers

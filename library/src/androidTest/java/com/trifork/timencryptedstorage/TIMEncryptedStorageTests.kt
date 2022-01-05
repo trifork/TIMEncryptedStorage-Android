@@ -134,7 +134,7 @@ class TIMEncryptedStorageTests {
     fun testStoreWithNewKey() = runBlocking {
         val storage = createTIMEncryptedStorage()
 
-        val storeResult = storage.storeWithNewKey(this, id, data, longSecret).await()
+        val storeResult = storage.storeWithNewKey(this, id, data, longSecret).await() as TIMResult.Success
 
         Assert.assertEquals(testKeyService.keyId, storeResult.value.keyId)
         Assert.assertEquals(testKeyService.longSecret, storeResult.value.longSecret)
@@ -181,5 +181,4 @@ class TIMEncryptedStorageTests {
     }
 
     //endregion
-
 }
