@@ -360,6 +360,13 @@ class TIMEncryptedStorage(
         return BiometricEncryptedDataHelper.biometricEncryptedData(encryptedData)
     }
 
+    /**
+     * Enables biometric protection for a keyId, by getting the `longSecret` and saving it with biometric protection.
+     * @param scope the [CoroutineScope]
+     * @param keyId the identifier for the key that was created with the `secret`.
+     * @param secret the secret which was used to create the `keyId`
+     * @param cipher the cipher received from the biometric prompt
+     */
     fun enableBiometric(
         scope: CoroutineScope,
         keyId: String,
@@ -392,9 +399,7 @@ class TIMEncryptedStorage(
         keyId: String,
         longSecret: String,
         cipher: Cipher
-    ): TIMResult<Unit, TIMEncryptedStorageError> {
-        return storeLongSecret(keyId, longSecret, cipher)
-    }
+    ): TIMResult<Unit, TIMEncryptedStorageError> = storeLongSecret(keyId, longSecret, cipher)
 
     //endregion
 
@@ -430,7 +435,7 @@ class TIMEncryptedStorage(
      * @param cipher the cipher received from the biometric prompt. Used to encrypt the longSecret, the initialization vector (IV) is saved for decryption usage.
      */
     private fun storeLongSecret(keyId: String, longSecret: String, cipher: Cipher): TIMResult<Unit, TIMEncryptedStorageError> {
-
+        //Encrypt data using cipher
         val encryptedDataResult = BiometricCipherHelper.encrypt(cipher, longSecret.asPreservedByteArray)
 
         val encryptedData = when (encryptedDataResult) {

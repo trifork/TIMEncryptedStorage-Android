@@ -12,6 +12,7 @@ sealed class TIMEncryptedStorageError : Throwable() {
 
     //region KeySever errors
     class KeyServiceFailed(val error: TIMKeyServiceError) : TIMEncryptedStorageError()
+    class KeyServiceJWTDecodeFailed(val error: Throwable): TIMEncryptedStorageError()
     //endregion
 
     //region Secure storage errors
@@ -31,6 +32,7 @@ sealed class TIMEncryptedStorageError : Throwable() {
         get() = when (this) {
             is FailedToEncryptData -> "Failed to encrypt data with specified key: ${error.localizedMessage}"
             is KeyServiceFailed -> "The KeyService failed with error: $error"
+            is KeyServiceJWTDecodeFailed -> "The KeyService JWT could not be decoded: $error"
             is SecureStorageFailed -> "The secure storage failed with error: $error"
             is FailedToDecryptData -> "Failed to decrypt data with specified key: $error"
             is InvalidEncryptionKey -> "The encryption key is invalid: $error"
