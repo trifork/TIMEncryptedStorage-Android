@@ -1,7 +1,6 @@
 package com.trifork.timencryptedstorage
 
 import android.util.Log.DEBUG
-import android.util.Log.INFO
 import com.trifork.timencryptedstorage.helpers.TIMEncryptedStorageLogger
 import com.trifork.timencryptedstorage.keyservice.TIMKeyService
 import com.trifork.timencryptedstorage.models.*
@@ -126,7 +125,6 @@ class TIMEncryptedStorage(
         return when (encryptedData) {
             is TIMResult.Failure -> encryptedData
             is TIMResult.Success -> {
-                // TODO: Can we ever fail to write to EncryptedSharedPrefs? - MFJ (13/09/2021)
                 secureStorage.store(encryptedData.value, storageKey).toTIMSuccess()
             }
         }
