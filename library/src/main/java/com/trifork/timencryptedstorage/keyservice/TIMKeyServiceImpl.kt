@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.await
 
@@ -76,9 +75,11 @@ class TIMKeyServiceImpl(
         ): TIMKeyServiceImpl {
 
             //TODO Separate in to some setup function, this is probably nice to have when developing, but should not be in the production version
-            val httpLoggingInterceptor = HttpLoggingInterceptor()
+            /*val httpLoggingInterceptor = HttpLoggingInterceptor()
             httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
-            val okHttpClient = OkHttpClient.Builder().addInterceptor(httpLoggingInterceptor).build()
+            val okHttpClient = OkHttpClient.Builder().addInterceptor(httpLoggingInterceptor).build()*/
+
+            val okHttpClient = OkHttpClient.Builder().build()
 
             return instance ?: TIMKeyServiceImpl(
                 api = Retrofit.Builder()
