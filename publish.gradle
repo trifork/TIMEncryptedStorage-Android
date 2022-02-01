@@ -5,6 +5,9 @@ afterEvaluate {
         publications {
             release(MavenPublication) {
                 from components.release
+
+                groupId = 'com.trifork.tim'
+                artifactId = 'tim-encryptedstorage'
             }
         }
     }
