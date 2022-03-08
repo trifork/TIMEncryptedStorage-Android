@@ -11,6 +11,7 @@ import com.trifork.timencryptedstorage.models.keyservice.response.TIMKeyModel
 import com.trifork.timencryptedstorage.securestorage.TIMSecureStorage
 import com.trifork.timencryptedstorage.shared.BiometricCipherHelper
 import com.trifork.timencryptedstorage.shared.BiometricEncryptedDataHelper
+
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import com.trifork.timencryptedstorage.shared.extensions.decrypt
@@ -32,10 +33,12 @@ typealias StorageKey = String
 
 class TIMEncryptedStorage(
     val secureStorage: TIMSecureStorage,
-    val logger: TIMEncryptedStorageLogger,
+    private val logger: TIMEncryptedStorageLogger,
     private val keyService: TIMKeyService,
     private val encryptionMethod: TIMESEncryptionMethod
 ) {
+
+    private val biometricCipherHelper = BiometricCipherHelper(logger)
 
     companion object {
         private const val TAG = "TIMEncryptedStorage"
@@ -73,7 +76,10 @@ class TIMEncryptedStorage(
      * This vil disable biometric protection for all values with the specified [keyId]
      * @param keyId The key id for the entry to remove to remove
      */
-    fun removeLongSecret(keyId: String): Unit = secureStorage.remove(getLongSecretStorageKey(keyId))
+    fun removeLongSecret(keyId: String) {
+        remove(getLongSecretStorageKey(keyId))
+        biometricCipherHelper.deleteSecretKey(keyId)
+    }
     //endregion
 
     private fun getLongSecretStorageKey(keyId: String) = "TIMEncryptedStorage.longSecret.$keyId"
@@ -179,7 +185,7 @@ class TIMEncryptedStorage(
 
         val encryptAndStoreResult = encryptAndStore(storageKey, data, keyServiceResult.value)
 
-        if(encryptAndStoreResult is TIMResult.Failure) {
+        if (encryptAndStoreResult is TIMResult.Failure) {
             return@async TIMEncryptedStorageError.FailedToEncryptData(encryptAndStoreResult.error).toTIMFailure()
         }
 
@@ -332,7 +338,7 @@ class TIMEncryptedStorage(
 
         logger.log(DEBUG, TAG, "Got biometric encrypted data from secure storage")
 
-        val decryptedDataResult = BiometricCipherHelper.decrypt(cipher, biometricEncryptedData.encryptedData)
+        val decryptedDataResult = biometricCipherHelper.decrypt(cipher, biometricEncryptedData.encryptedData)
 
         return when (decryptedDataResult) {
             is TIMResult.Failure -> decryptedDataResult
@@ -373,7 +379,7 @@ class TIMEncryptedStorage(
     ): Deferred<TIMResult<Unit, TIMEncryptedStorageError>> = scope.async {
         // 1. Get longSecret with keyId + secret
         // 2. Save longSecret for keyId encrypted by Cipher from biometric login
-        // 5. Return bool result for success
+        // 3. Return bool result for success
         val keyServiceResult = keyService.getKeyViaSecret(scope, secret, keyId).await()
 
         val keyModel = when (keyServiceResult) {
@@ -403,8 +409,8 @@ class TIMEncryptedStorage(
 
     //region Biometric helper methods
 
-    fun getEncryptCipher(): TIMResult<Cipher, TIMEncryptedStorageError> {
-        return BiometricCipherHelper.getInitializedCipherForEncryption()
+    fun getEncryptCipher(keyId: String): TIMResult<Cipher, TIMEncryptedStorageError> {
+        return biometricCipherHelper.getInitializedCipherForEncryption(keyId)
     }
 
     /**
@@ -423,7 +429,7 @@ class TIMEncryptedStorage(
 
         logger.log(DEBUG, TAG, "Got initialization vector (IV) for initializing decryption cipher")
         //Initialize the decryption cipher using the retrieved IV, can now be send to the biometric prompt
-        return BiometricCipherHelper.getInitializedCipherForDecryption(initializationVector)
+        return biometricCipherHelper.getInitializedCipherForDecryption(keyId, initializationVector)
     }
 
     /**
@@ -434,7 +440,7 @@ class TIMEncryptedStorage(
      */
     private fun storeLongSecret(keyId: String, longSecret: String, cipher: Cipher): TIMResult<Unit, TIMEncryptedStorageError> {
         //Encrypt data using cipher
-        val encryptedDataResult = BiometricCipherHelper.encrypt(cipher, longSecret.asPreservedByteArray)
+        val encryptedDataResult = biometricCipherHelper.encrypt(cipher, longSecret.asPreservedByteArray)
 
         val encryptedData = when (encryptedDataResult) {
             is TIMResult.Failure -> return encryptedDataResult

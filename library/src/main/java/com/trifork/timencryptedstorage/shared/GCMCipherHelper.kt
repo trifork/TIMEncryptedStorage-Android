@@ -10,6 +10,7 @@ import java.security.*
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
 
+//TODO ktv ask about our iv and tag length is this secure enough?
 object CipherConstants {
     const val cipherAlgorithm: String = KeyProperties.KEY_ALGORITHM_AES
     const val cipherBlockMode: String = KeyProperties.BLOCK_MODE_GCM
