@@ -215,6 +215,7 @@ class TIMEncryptedStorage(
         return@async handleKeyServiceResultAndEncryptData(storageKey, data, keyServiceResult)
     }
 
+    //TODO This function is not utilized in our final implementation and therefore only called by test code (as in the iOS implementation) JHE (09.03.22)
     //TODO Should we also store the long secret? using storeLongSecret(storageKey, longSecret, cipher) JHE (28/12/21)
     fun storeViaBiometric(
         scope: CoroutineScope,
@@ -242,6 +243,7 @@ class TIMEncryptedStorage(
         ).await()
     }
 
+    //TODO This function is not utilized in our final implementation and therefore only called by test code (as in the iOS implementation) JHE (09.03.22)
     fun storeViaBiometricWithNewKey(scope: CoroutineScope, id: StorageKey, data: ByteArray, secret: String, cipher: Cipher): Deferred<TIMResult<TIMESKeyCreationResult, TIMEncryptedStorageError>> = scope.async {
         // 1. Create new encryption key with secret
         // 2. Save longSecret for keyId via FaceID/TouchID

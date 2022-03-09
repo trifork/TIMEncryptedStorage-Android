@@ -16,7 +16,7 @@ class SecureStorageMock : TIMSecureStorage {
     }
 
     override fun store(data: ByteArray, storageKey: StorageKey) {
-        protectedData.put(storageKey, data)
+        protectedData[storageKey] = data
         return
     }
 
@@ -43,5 +43,9 @@ class SecureStorageMock : TIMSecureStorage {
 
     override fun getBiometricProtected(storageKey: StorageKey): TIMResult<ByteArray, TIMSecureStorageError> {
         return get(storageKey)
+    }
+
+    fun clear() {
+        protectedData.clear()
     }
 }

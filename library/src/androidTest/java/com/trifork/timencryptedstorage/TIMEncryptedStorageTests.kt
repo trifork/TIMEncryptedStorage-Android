@@ -1,6 +1,7 @@
 package com.trifork.timencryptedstorage
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.trifork.timencryptedstorage.helpers.test.SecretKeyHelperStub
 import com.trifork.timencryptedstorage.helpers.test.SecureStorageMock
 import com.trifork.timencryptedstorage.helpers.test.TIMEncryptedStorageLoggerInternal
 import com.trifork.timencryptedstorage.helpers.test.TIMKeyServiceStub
@@ -9,10 +10,16 @@ import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
 import com.trifork.timencryptedstorage.shared.BiometricCipherHelper
+import com.trifork.timencryptedstorage.shared.SecretKeyHelper
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import javax.crypto.Cipher
@@ -22,12 +29,32 @@ class TIMEncryptedStorageTests {
 
     private val testStore = SecureStorageMock()
     private val testKeyService = TIMKeyServiceStub()
-    private val biometricCipherHelper = BiometricCipherHelper
+    private val loggerStub = mockk<TIMEncryptedStorageLoggerInternal> {
+        every { log(any(), any(), any(), any()) } returns Unit
+    }
+    private val biometricCipherHelper = BiometricCipherHelper(loggerStub)
     private val id = "test"
     private val data = "testData".asPreservedByteArray
     private val secret = "1234"
     private val longSecret = "longSecret"
     private val keyId = "123456789"
+
+    @Before
+    fun init() {
+        //Applies mocking to our SecretKeyHelper object
+        mockkObject(SecretKeyHelper)
+
+        //Mocks creation of secret key to create insecure key that does not require the device to be unlocked
+        every {
+            SecretKeyHelper.getOrCreateSecretKey(any())
+        } returns SecretKeyHelperStub.createInsecureSecretKey()
+    }
+
+    @After
+    fun teardown() {
+        //Clear the store between tests
+        testStore.clear()
+    }
 
     @Test
     fun testHasValue() = runBlocking {
@@ -79,27 +106,26 @@ class TIMEncryptedStorageTests {
     fun testRemoveLongSecret() = runBlocking {
         val storage = createTIMEncryptedStorage()
         val encryptionCipherOne = getEncryptionCipher("1")
-        val encryptionCipherTwo = getEncryptionCipher("2")
         val decryptionCipherOne = getDecryptionCipher("1", encryptionCipherOne.iv)
-        val decryptionCipherTwo = getDecryptionCipher("2", encryptionCipherTwo.iv)
+
+        //Store the secret
+        storage.store(this, id, data, keyId, secret).await()
 
         val enableBioResult = storage.enableBiometric(this, keyId, secret, encryptionCipherOne).await()
         Assert.assertEquals(TIMResult.Success::class, enableBioResult::class)
 
-        val storeViaBioResult = storage.storeViaBiometricWithNewKey(this, id, data, testKeyService.longSecret, encryptionCipherTwo).await() as TIMResult.Success
-        Assert.assertEquals(TIMResult.Success::class, storeViaBioResult::class)
-
         // Get it via bio to make sure it is accessible via the used longSecret
-        val getViaBioResult = storage.getViaBiometric(this, id, testKeyService.keyId, decryptionCipherOne).await() as TIMResult.Success
+        val getViaBioResult = storage.getViaBiometric(this, id, testKeyService.keyId, decryptionCipherOne).await()
+        val getViaBio = getViaBioResult as TIMResult.Success
 
-        Assert.assertEquals(testKeyService.longSecret, getViaBioResult.value.longSecret)
-        Assert.assertEquals(data.asPreservedString, getViaBioResult.value.data.asPreservedString)
+        Assert.assertEquals(testKeyService.longSecret, getViaBio.value.longSecret)
+        Assert.assertEquals(data.asPreservedString, getViaBio.value.data.asPreservedString)
 
         // Remove!
         storage.removeLongSecret(testKeyService.keyId)
 
         // It should be inaccessible with the longSecret now ...
-        val getViaBioFailureResult = storage.getViaBiometric(this, id, testKeyService.keyId, decryptionCipherTwo).await() as TIMResult.Failure
+        val getViaBioFailureResult = storage.getViaBiometric(this, id, testKeyService.keyId, decryptionCipherOne).await() as TIMResult.Failure
         val error = getViaBioFailureResult.error as TIMEncryptedStorageError.SecureStorageFailed
         Assert.assertEquals(TIMSecureStorageError.FailedToLoadData::class, error.error::class)
     }
@@ -165,17 +191,17 @@ class TIMEncryptedStorageTests {
     //region private helpers
     private fun createTIMEncryptedStorage(): TIMEncryptedStorage = TIMEncryptedStorage(
         testStore,
-        TIMEncryptedStorageLoggerInternal(),
+        loggerStub,
         testKeyService,
         TIMESEncryptionMethod.AesGcm
     )
 
-    private fun getEncryptionCipher(keyId: String) : Cipher {
+    private fun getEncryptionCipher(keyId: String): Cipher {
         val encryptionCipher = biometricCipherHelper.getInitializedCipherForEncryption(keyId) as TIMResult.Success
         return encryptionCipher.value
     }
 
-    private fun getDecryptionCipher(keyId: String, initializationVector: ByteArray) : Cipher {
+    private fun getDecryptionCipher(keyId: String, initializationVector: ByteArray): Cipher {
         val encryptionCipher = biometricCipherHelper.getInitializedCipherForDecryption(keyId, initializationVector) as TIMResult.Success
         return encryptionCipher.value
     }
