@@ -65,9 +65,6 @@ dependencies {
     //endregion
 
     //region Testing
-    testImplementation jUnit.jupiterApi
-    testRuntimeOnly jUnit.jupiterEngine
-
     androidTestImplementation mockk.android
     androidTestImplementation androidX.test.androidJUnit
     androidTestImplementation androidX.test.espresso
