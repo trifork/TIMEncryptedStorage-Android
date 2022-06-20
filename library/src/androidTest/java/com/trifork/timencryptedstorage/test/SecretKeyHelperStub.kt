@@ -1,4 +1,4 @@
-package com.trifork.timencryptedstorage.helpers.test
+package com.trifork.timencryptedstorage.test
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -19,7 +19,7 @@ object SecretKeyHelperStub {
 
     //Generate an insecure secret key for testing purposes
     fun createInsecureSecretKey(): TIMResult<SecretKey, TIMEncryptedStorageError> {
-        getSecretKey()?.let { return it.toTIMSuccess() }
+        getSecretKey()?.let { return@createInsecureSecretKey it.toTIMSuccess() }
 
         return generateSecretKey(
             KeyGenParameterSpec.Builder(keyAlias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
