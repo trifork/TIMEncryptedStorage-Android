@@ -18,8 +18,19 @@ sealed class TIMKeyServiceError : Throwable() {
     class BadInternet : TIMKeyServiceError()
     class PotentiallyNoInternet : TIMKeyServiceError()
 
-    class UnableToDecode(val error: Throwable) : TIMKeyServiceError()
-    class Unknown(val error: Throwable) : TIMKeyServiceError()
+    class UnableToDecode(
+        @Deprecated("use cause instead", ReplaceWith("cause"), DeprecationLevel.WARNING)
+        val error: Throwable
+    ) : TIMKeyServiceError() {
+        override val cause: Throwable = error
+    }
+
+    class Unknown(
+        @Deprecated("use cause instead", ReplaceWith("cause"), DeprecationLevel.WARNING)
+        val error: Throwable
+    ) : TIMKeyServiceError() {
+        override val cause: Throwable = error
+    }
 }
 
 sealed class TIMKeyServiceErrorCode {
@@ -43,8 +54,7 @@ fun Throwable.mapToTIMKeyServiceError(): TIMKeyServiceError {
             UnableToCreateKey -> TIMKeyServiceError.UnableToCreateKey()
             else -> if (code < 0) TIMKeyServiceError.BadInternet() else TIMKeyServiceError.Unknown(this)
         }
-    }
-    else if (this is SerializationException) {
+    } else if (this is SerializationException) {
         return TIMKeyServiceError.UnableToDecode(this)
     }
     return TIMKeyServiceError.Unknown(this)
