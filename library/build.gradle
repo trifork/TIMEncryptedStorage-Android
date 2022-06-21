@@ -66,6 +66,9 @@ dependencies {
     //endregion
 
     //region Testing
+    testImplementation jUnit.junit
+    testImplementation roboleltric.roboleltric
+
     androidTestImplementation mockk.android
     androidTestImplementation androidX.test.androidJUnit
     androidTestImplementation androidX.test.espresso
