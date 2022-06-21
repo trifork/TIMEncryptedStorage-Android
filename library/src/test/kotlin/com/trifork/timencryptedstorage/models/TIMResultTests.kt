@@ -29,7 +29,7 @@ class TIMResultTests {
             Assert.assertTrue(shouldFailResult.error is TIMKeyServiceError.Unknown)
             val serviceError = shouldFailResult.error as TIMKeyServiceError.Unknown
             Assert.assertNotNull(serviceError)
-            Assert.assertEquals("reason", serviceError.error.message)
+            Assert.assertEquals("reason", serviceError.cause.message)
         }
 
         @Test

@@ -1,6 +1,6 @@
 plugins {
     id 'com.android.library'
-    id 'kotlin-android'
+    id 'org.jetbrains.kotlin.android'
     id 'maven-publish'
     id 'org.jetbrains.kotlin.plugin.serialization'
 }
@@ -9,13 +9,11 @@ apply from: '../dependencies.gradle'
 
 
 android {
-    compileSdk 30
-
-    testBuildType "development"
+    compileSdk 32
 
     defaultConfig {
         minSdk 24
-        targetSdk 30
+        targetSdk 32
         versionCode 1
         versionName "1.0.0"
 
@@ -45,8 +43,8 @@ android {
 dependencies {
 
     //region Android
-    implementation androidX.coreKtx
-    implementation androidX.appCompat
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.4.2'
 
     implementation androidX.securityCrypto
     //endregion

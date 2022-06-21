@@ -9,8 +9,7 @@ import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
-import com.trifork.timencryptedstorage.shared.BiometricCipherHelper
-import com.trifork.timencryptedstorage.shared.SecretKeyHelper
+import com.trifork.timencryptedstorage.shared.*
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import io.mockk.every
