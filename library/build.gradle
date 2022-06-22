@@ -1,6 +1,6 @@
 plugins {
     id 'com.android.library'
-    id 'kotlin-android'
+    id 'org.jetbrains.kotlin.android'
     id 'maven-publish'
     id 'org.jetbrains.kotlin.plugin.serialization'
 }
@@ -9,17 +9,18 @@ apply from: '../dependencies.gradle'
 
 
 android {
-    compileSdk 30
-
-    testBuildType "development"
+    compileSdk 32
 
     defaultConfig {
         minSdk 24
-        targetSdk 30
+        targetSdk 32
         versionCode 1
         versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        consumerProguardFiles "consumer-rules.pro"
+
         signingConfig signingConfigs.debug
     }
 
@@ -65,6 +66,9 @@ dependencies {
     //endregion
 
     //region Testing
+    testImplementation jUnit.junit
+    testImplementation roboleltric.roboleltric
+
     androidTestImplementation mockk.android
     androidTestImplementation androidX.test.androidJUnit
     androidTestImplementation androidX.test.espresso

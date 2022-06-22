@@ -1,4 +1,4 @@
-package com.trifork.timencryptedstorage.helpers.test
+package com.trifork.timencryptedstorage.test
 
 import android.util.Log
 import com.trifork.timencryptedstorage.helpers.TIMEncryptedStorageLogger

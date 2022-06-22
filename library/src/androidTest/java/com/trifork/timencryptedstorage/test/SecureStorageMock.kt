@@ -1,4 +1,4 @@
-package com.trifork.timencryptedstorage.helpers.test
+package com.trifork.timencryptedstorage.test
 
 import com.trifork.timencryptedstorage.StorageKey
 import com.trifork.timencryptedstorage.models.TIMResult

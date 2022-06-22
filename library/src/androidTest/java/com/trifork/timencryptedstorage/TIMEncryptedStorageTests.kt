@@ -1,16 +1,15 @@
 package com.trifork.timencryptedstorage
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.trifork.timencryptedstorage.helpers.test.SecretKeyHelperStub
-import com.trifork.timencryptedstorage.helpers.test.SecureStorageMock
-import com.trifork.timencryptedstorage.helpers.test.TIMEncryptedStorageLoggerInternal
-import com.trifork.timencryptedstorage.helpers.test.TIMKeyServiceStub
+import com.trifork.timencryptedstorage.test.SecretKeyHelperStub
+import com.trifork.timencryptedstorage.test.SecureStorageMock
+import com.trifork.timencryptedstorage.test.TIMEncryptedStorageLoggerInternal
+import com.trifork.timencryptedstorage.test.TIMKeyServiceStub
 import com.trifork.timencryptedstorage.models.TIMESEncryptionMethod
 import com.trifork.timencryptedstorage.models.TIMResult
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
 import com.trifork.timencryptedstorage.models.errors.TIMSecureStorageError
-import com.trifork.timencryptedstorage.shared.BiometricCipherHelper
-import com.trifork.timencryptedstorage.shared.SecretKeyHelper
+import com.trifork.timencryptedstorage.shared.*
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import io.mockk.every
