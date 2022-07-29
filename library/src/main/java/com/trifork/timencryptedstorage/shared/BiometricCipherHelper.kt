@@ -4,10 +4,9 @@ import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Log
 import com.trifork.timencryptedstorage.helpers.TIMEncryptedStorageLogger
-import com.trifork.timencryptedstorage.models.TIMResult
+import com.trifork.timencryptedstorage.models.*
 import com.trifork.timencryptedstorage.models.errors.TIMEncryptedStorageError
-import com.trifork.timencryptedstorage.models.toTIMFailure
-import com.trifork.timencryptedstorage.models.toTIMSuccess
+import com.trifork.timencryptedstorage.shared.SecretKeyHelper.deleteSecretKey
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedByteArray
 import com.trifork.timencryptedstorage.shared.extensions.asPreservedString
 import kotlinx.serialization.Serializable
@@ -86,14 +85,14 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
         } catch (throwable: IllegalBlockSizeException) {
             //Filter so we only catch the android.security.KeyStoreException child exception
             val childThrowable = throwable.cause
-            if(childThrowable != null && childThrowable.message?.contains("Key user not authenticated") == true) {
-                logger.log(Log.DEBUG, TAG, "encrypt threw: IllegalBlockSizeException with KeyStoreException as cause exception: $throwable")
+            if (childThrowable != null && childThrowable.message?.contains("Key user not authenticated") == true) {
+                logger.log(Log.DEBUG, TAG, "encrypt threw: IllegalBlockSizeException with KeyStoreException as cause exception", throwable)
                 return TIMEncryptedStorageError.UnrecoverablyFailedToEncrypt(throwable).toTIMFailure()
             }
-            logger.log(Log.DEBUG, TAG, "encrypt threw: IllegalBlockSizeException: $throwable")
+            logger.log(Log.DEBUG, TAG, "encrypt threw: IllegalBlockSizeException", throwable)
             TIMEncryptedStorageError.FailedToEncryptData(throwable).toTIMFailure()
         } catch (throwable: Throwable) {
-            logger.log(Log.DEBUG, TAG, "encrypt threw: $throwable")
+            logger.log(Log.DEBUG, TAG, "encrypt threw", throwable)
             TIMEncryptedStorageError.FailedToEncryptData(throwable).toTIMFailure()
         }
     }
@@ -104,14 +103,14 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
         } catch (throwable: IllegalBlockSizeException) {
             //Filter so we only catch the android.security.KeyStoreException child exception
             val childThrowable = throwable.cause
-            if(childThrowable != null && childThrowable.message?.contains("Key user not authenticated") == true) {
-                logger.log(Log.DEBUG, TAG, "decrypt threw: IllegalBlockSizeException with KeyStoreException as cause exception: $throwable")
+            if (childThrowable != null && childThrowable.message?.contains("Key user not authenticated") == true) {
+                logger.log(Log.DEBUG, TAG, "decrypt threw: IllegalBlockSizeException with KeyStoreException as cause exception", throwable)
                 return TIMEncryptedStorageError.UnrecoverablyFailedToDecrypt(throwable).toTIMFailure()
             }
-            logger.log(Log.DEBUG, TAG, "decrypt threw: IllegalBlockSizeException: $throwable")
+            logger.log(Log.DEBUG, TAG, "decrypt threw: IllegalBlockSizeException", throwable)
             TIMEncryptedStorageError.FailedToEncryptData(throwable).toTIMFailure()
         } catch (throwable: Throwable) {
-            logger.log(Log.DEBUG, TAG, "encrypt decrypt: $throwable")
+            logger.log(Log.DEBUG, TAG, "encrypt decrypt", throwable)
             TIMEncryptedStorageError.FailedToDecryptData(throwable).toTIMFailure()
         }
     }
@@ -123,33 +122,30 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
 
         logger.log(Log.DEBUG, TAG, "getInitializedCipherForEncryption: cipher result: $cipherResult")
 
-        val cipher = when (cipherResult) {
-            is TIMResult.Failure -> return cipherResult
-            is TIMResult.Success -> cipherResult.value
+        val cipher = cipherResult.mapValueOrOnFailedResult {
+            return@getInitializedCipherForEncryption it
         }
 
         val secretKeyResult = SecretKeyHelper.createNewSecretKey(keyId)
 
         logger.log(Log.DEBUG, TAG, "getInitializedCipherForEncryption: secretKeyResult: $secretKeyResult")
 
-        val secretKey = when (secretKeyResult) {
-            is TIMResult.Failure -> return secretKeyResult
-            is TIMResult.Success -> secretKeyResult.value
+        val secretKey = secretKeyResult.mapValueOrOnFailedResult {
+            return@getInitializedCipherForEncryption it
         }
 
-        return try {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-            cipher.toTIMSuccess()
-        } catch (throwable: KeyPermanentlyInvalidatedException) {
-            logger.log(Log.DEBUG, TAG, "getInitializedCipherForEncryption: caught KeyPermanentlyInvalidatedException: $throwable. Deleting secret key and calling getInitializedCipherForEncryption again.")
-            //The secret key was permanently invalidated. Delete it. In case a user with a invalid key tries to enable biometric after the key was invalidated
-            deleteSecretKey(keyId)
-            //Run the entire function again, trying to create a new secret key and init the cipher again
-            getInitializedCipherForEncryption(keyId)
-        } catch (throwable: Throwable) {
-            logger.log(Log.DEBUG, TAG, "getInitializedCipherForEncryption: caught throwable: $throwable")
-            TIMEncryptedStorageError.InvalidEncryptionKey(throwable).toTIMFailure()
-        }
+        return initializeCipher(
+            initialize = {
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+                cipher.toTIMSuccess()
+            },
+            onKeyPermanentlyInvalidated = {
+                logger.log(Log.DEBUG, TAG, "Deleting secret key and calling getInitializedCipherForEncryption again.")
+                //This case can happen when a user with a invalid key tries to enable biometric after the key was invalidated
+                deleteSecretKey(keyId)
+                getInitializedCipherForEncryption(keyId)
+            }
+        )
     }
 
     fun getInitializedCipherForDecryption(keyId: String, initializationVector: ByteArray): TIMResult<Cipher, TIMEncryptedStorageError> {
@@ -158,22 +154,34 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
 
         logger.log(Log.DEBUG, TAG, "getInitializedCipherForDecryption: cipherSecretKeyResult: $cipherSecretKeyResult")
 
-        val cipherSecretKey = when (cipherSecretKeyResult) {
-            is TIMResult.Failure -> return cipherSecretKeyResult
-            is TIMResult.Success -> cipherSecretKeyResult.value
+        val cipherSecretKey = cipherSecretKeyResult.mapValueOrOnFailedResult {
+            return@getInitializedCipherForDecryption it
         }
 
+        return initializeCipher(
+            initialize = {
+                cipherSecretKey.cipher.init(Cipher.DECRYPT_MODE, cipherSecretKey.secretKey, IvParameterSpec(initializationVector))
+                cipherSecretKey.cipher.toTIMSuccess()
+            },
+            onKeyPermanentlyInvalidated = { throwable ->
+                logger.log(Log.DEBUG, TAG, "Deleting secret key and throwing TIMEncryptedStorageError.PermanentlyInvalidatedKey")
+                deleteSecretKey(keyId)
+                TIMEncryptedStorageError.PermanentlyInvalidatedKey(throwable).toTIMFailure()
+            }
+        )
+    }
+
+    private fun initializeCipher(
+        initialize: () -> TIMResult<Cipher, TIMEncryptedStorageError>,
+        onKeyPermanentlyInvalidated: (throwable: Throwable) -> TIMResult<Cipher, TIMEncryptedStorageError>,
+    ): TIMResult<Cipher, TIMEncryptedStorageError> {
         return try {
-            cipherSecretKey.cipher.init(Cipher.DECRYPT_MODE, cipherSecretKey.secretKey, IvParameterSpec(initializationVector))
-            cipherSecretKey.cipher.toTIMSuccess()
+            initialize()
         } catch (throwable: KeyPermanentlyInvalidatedException) {
-            logger.log(Log.DEBUG, TAG, "getInitializedCipherForDecryption: caught KeyPermanentlyInvalidatedException: $throwable. Deleting secret key and throwing TIMEncryptedStorageError.PermanentlyInvalidatedKey")
-            //The secret key was permanently invalidated. Delete it.
-            deleteSecretKey(keyId)
-            //Throw the error, informing the user of the error, the user has to recreate a cipher for encryption (start over)
-            TIMEncryptedStorageError.PermanentlyInvalidatedKey(throwable).toTIMFailure()
+            logger.log(Log.DEBUG, TAG, "", throwable)
+            onKeyPermanentlyInvalidated()
         } catch (throwable: Throwable) {
-            logger.log(Log.DEBUG, TAG, "getInitializedCipherForDecryption: caught throwable: $throwable")
+            logger.log(Log.DEBUG, TAG, "", throwable)
             TIMEncryptedStorageError.InvalidEncryptionKey(throwable).toTIMFailure()
         }
     }
@@ -199,19 +207,18 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
 
         logger.log(Log.DEBUG, TAG, "createCipherAndSecretKey: cipherResult: $cipherResult")
 
-        val cipher = when (cipherResult) {
-            is TIMResult.Failure -> return cipherResult
-            is TIMResult.Success -> cipherResult.value
+        val cipher = cipherResult.mapValueOrOnFailedResult {
+            return@createCipherAndSecretKey it
         }
 
         val secretKeyResult = SecretKeyHelper.getOrCreateSecretKey(keyId)
 
         logger.log(Log.DEBUG, TAG, "createCipherAndSecretKey: secretKeyResult: $secretKeyResult")
 
-        val secretKey = when (secretKeyResult) {
-            is TIMResult.Failure -> return secretKeyResult
-            is TIMResult.Success -> secretKeyResult.value
+        val secretKey = secretKeyResult.mapValueOrOnFailedResult {
+            return@createCipherAndSecretKey it
         }
+
 
         return CipherSecretKey(cipher, secretKey).toTIMSuccess()
     }
@@ -224,7 +231,7 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
         return try {
             Cipher.getInstance(BiometricCipherConstants.cipherTransformation).toTIMSuccess()
         } catch (throwable: Throwable) {
-            logger.log(Log.DEBUG, TAG, "getCipherInstance: throwable: $throwable")
+            logger.log(Log.DEBUG, TAG, "", throwable)
             TIMEncryptedStorageError.InvalidCipher(throwable).toTIMFailure()
         }
     }

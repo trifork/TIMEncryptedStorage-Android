@@ -19,27 +19,18 @@ object SecretKeyHelper {
     //TODO Should we introduce a KeyGenParameterSpec version flag, so that a 'minimum_required' flag could be checked and used to invalidate the current secretKey
     fun getOrCreateSecretKey(keyId: String): TIMResult<SecretKey, TIMEncryptedStorageError> {
         return try {
-            // If a secret key exist return it. We want to use the same SecretKey across encrypt and decrypt
-            getSecretKey(keyId)?.let { return it.toTIMSuccess() }
-
-            // No secret key exist, create one
-            generateSecretKey(
-                KeyGenParameterSpec.Builder(getKeyAlias(keyId), KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-                    .setBlockModes(BiometricCipherConstants.cipherBlockMode)
-                    .setEncryptionPaddings(BiometricCipherConstants.cipherPadding)
-                    .setUserAuthenticationRequired(true)
-                    .setInvalidatedByBiometricEnrollment(true)
-                    .build()
-            ).toTIMSuccess()
+            val existingKey = getSecretKey(keyId)
+            if (existingKey != null) {
+                return existingKey.toTIMSuccess()
+            }
+            generateSecretKey(createKeyGenParameterSpecForNewKeys(keyId)).toTIMSuccess()
         } catch (throwable: Throwable) {
             TIMEncryptedStorageError.InvalidEncryptionKey(throwable).toTIMFailure()
         }
     }
 
     fun createNewSecretKey(keyId: String): TIMResult<SecretKey, TIMEncryptedStorageError> {
-        //Delete existing secret key in case something went wrong
         deleteSecretKey(getKeyAlias(keyId))
-        //Create new secret key
         return getOrCreateSecretKey(keyId)
     }
 
@@ -52,6 +43,17 @@ object SecretKeyHelper {
 
     private fun getKeyAlias(keyId: String) = "TIMEncryptedStorage.secretKey.$keyId"
 
+
+    private fun createKeyGenParameterSpecForNewKeys(keyId: String): KeyGenParameterSpec {
+        KeyGenParameterSpec.Builder(getKeyAlias(keyId), KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            .setBlockModes(BiometricCipherConstants.cipherBlockMode)
+            .setEncryptionPaddings(BiometricCipherConstants.cipherPadding)
+            .setUserAuthenticationValidityDurationSeconds(6 * 10)
+            .setUserAuthenticationRequired(true)
+            .setInvalidatedByBiometricEnrollment(true)
+            .build()
+    }
+
     private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec): SecretKey {
         val keyGenerator = KeyGenerator.getInstance(
             BiometricCipherConstants.cipherAlgorithm, keyProvider
@@ -62,7 +64,7 @@ object SecretKeyHelper {
 
     private fun getSecretKey(keyId: String): SecretKey? {
         val keyStore = loadKeyStore()
-        return keyStore.getKey(getKeyAlias(keyId), null)?.let { return it as SecretKey }
+        return keyStore.getKey(getKeyAlias(keyId), null)?.let { it as SecretKey }
     }
 
     private fun loadKeyStore(): KeyStore {

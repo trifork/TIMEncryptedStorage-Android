@@ -55,6 +55,7 @@ inline fun <Value, Error> TIMResult<Value, Error>.isSuccess(): Boolean {
     level = DeprecationLevel.ERROR
 )
 @Throws(Error::class)
+@Suppress("UNUSED", "UNUSED_PARAMETER")
 inline fun TIMResult.Success<*>.isSuccess(): Nothing = throw Error("Unexpected")
 
 @Deprecated(
@@ -63,6 +64,7 @@ inline fun TIMResult.Success<*>.isSuccess(): Nothing = throw Error("Unexpected")
     level = DeprecationLevel.ERROR
 )
 @Throws(Error::class)
+@Suppress("UNUSED", "UNUSED_PARAMETER")
 inline fun TIMResult.Failure<*>.isSuccess(): Nothing = throw Error("Unexpected")
 
 
@@ -72,6 +74,7 @@ inline fun TIMResult.Failure<*>.isSuccess(): Nothing = throw Error("Unexpected")
     level = DeprecationLevel.ERROR
 )
 @Throws(Error::class)
+@Suppress("UNUSED", "UNUSED_PARAMETER")
 inline fun TIMResult.Success<*>.isFailed(): Nothing = throw Error("Unexpected")
 
 @Deprecated(
@@ -80,16 +83,23 @@ inline fun TIMResult.Success<*>.isFailed(): Nothing = throw Error("Unexpected")
     level = DeprecationLevel.ERROR
 )
 @Throws(Error::class)
+@Suppress("UNUSED", "UNUSED_PARAMETER")
 inline fun TIMResult.Failure<*>.isFailed(): Nothing = throw Error("Unexpected")
 
 
 inline fun <Value, Error> TIMResult<Value, Error>.mapValueOrOnFailed(
     onFailed: (Error) -> Nothing
+): Value = mapValueOrOnFailedResult {
+    onFailed(it.error)
+}
+
+inline fun <Value, Error> TIMResult<Value, Error>.mapValueOrOnFailedResult(
+    onFailed: (TIMResult.Failure<Error>) -> Nothing
 ): Value {
     if (this.isSuccess()) {
         return value
     } else {
-        onFailed(error)
+        onFailed(this)
     }
 }
 
@@ -99,6 +109,7 @@ inline fun <Value, Error> TIMResult<Value, Error>.mapValueOrOnFailed(
     level = DeprecationLevel.ERROR
 )
 @Throws(Error::class)
+@Suppress("UNUSED", "UNUSED_PARAMETER")
 inline fun TIMResult.Success<*>.mapValueOrOnFailed(): Nothing = throw Error("Unexpected")
 
 @Deprecated(
@@ -107,4 +118,5 @@ inline fun TIMResult.Success<*>.mapValueOrOnFailed(): Nothing = throw Error("Une
     replaceWith = ReplaceWith("block()")
 )
 @Throws(Error::class)
+@Suppress("UNUSED", "UNUSED_PARAMETER")
 inline fun TIMResult.Failure<*>.mapValueOrOnFailed(block: (Error) -> Nothing): Nothing = throw Error("Unexpected")

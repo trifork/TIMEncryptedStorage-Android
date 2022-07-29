@@ -22,6 +22,7 @@ sealed class TIMKeyServiceError : Throwable() {
         @Deprecated("use cause instead", ReplaceWith("cause"), DeprecationLevel.WARNING)
         val error: Throwable
     ) : TIMKeyServiceError() {
+        @Suppress("DEPRECATION")
         override val cause: Throwable = error
     }
 
@@ -29,6 +30,7 @@ sealed class TIMKeyServiceError : Throwable() {
         @Deprecated("use cause instead", ReplaceWith("cause"), DeprecationLevel.WARNING)
         val error: Throwable
     ) : TIMKeyServiceError() {
+        @Suppress("DEPRECATION")
         override val cause: Throwable = error
     }
 }
