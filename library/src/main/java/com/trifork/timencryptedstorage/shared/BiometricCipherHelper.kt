@@ -179,7 +179,7 @@ class BiometricCipherHelper(private val logger: TIMEncryptedStorageLogger) {
             initialize()
         } catch (throwable: KeyPermanentlyInvalidatedException) {
             logger.log(Log.DEBUG, TAG, "", throwable)
-            onKeyPermanentlyInvalidated()
+            onKeyPermanentlyInvalidated(throwable)
         } catch (throwable: Throwable) {
             logger.log(Log.DEBUG, TAG, "", throwable)
             TIMEncryptedStorageError.InvalidEncryptionKey(throwable).toTIMFailure()

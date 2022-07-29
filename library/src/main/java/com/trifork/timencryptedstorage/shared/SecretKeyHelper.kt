@@ -45,7 +45,7 @@ object SecretKeyHelper {
 
 
     private fun createKeyGenParameterSpecForNewKeys(keyId: String): KeyGenParameterSpec {
-        KeyGenParameterSpec.Builder(getKeyAlias(keyId), KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+        return KeyGenParameterSpec.Builder(getKeyAlias(keyId), KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
             .setBlockModes(BiometricCipherConstants.cipherBlockMode)
             .setEncryptionPaddings(BiometricCipherConstants.cipherPadding)
             .setUserAuthenticationValidityDurationSeconds(6 * 10)
